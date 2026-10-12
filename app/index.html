@@ -69,10 +69,10 @@ body.hasdock{padding-bottom:calc(var(--navh,0px) + 90px)}body.sheetopen{overflow
 .sheet .list{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding-bottom:max(20px,env(safe-area-inset-bottom))}.sheet .item{padding:10px 16px;cursor:default}
 .grp{font-size:12px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;padding:12px 16px 4px;display:flex;gap:6px;align-items:center;background:#fff}
 .search{width:100%;padding:11px 12px 11px 38px;border:1px solid #cbd5e1;border-radius:12px;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%2364748b' stroke-width='2'%3E%3Ccircle cx='7' cy='7' r='5'/%3E%3Cpath d='M11 11l4 4'/%3E%3C/svg%3E") no-repeat 12px center;font-size:16px;margin:0}.search.hl{border-color:#2563eb;box-shadow:0 0 0 3px #bfdbfe}
-</style></head><body><div id="app"><main class="center"><div class="card">Loading…</div></main></div>
+.pill.y{background:#fef3c7;color:#92400e}.item.bk .add{margin-left:6px}</style></head><body><div id="app"><main class="center"><div class="card">Loading…</div></main></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-const BUILD='20261012224609';
+const BUILD='20261012225734';
 async function checkVer(){try{const r=await fetch('version.txt?'+Date.now(),{cache:'no-store'});if(!r.ok)return;const v=(await r.text()).trim();
  if(v&&v!==BUILD&&typeof TYPING==='function'&&TYPING()){document.addEventListener('focusout',()=>setTimeout(checkVer,300),{once:true});return}
  if(v&&v!==BUILD&&sessionStorage.getItem('cc.app.reloaded')!==v){sessionStorage.setItem('cc.app.reloaded',v);const u=new URLSearchParams(location.search);u.set('v',v);location.replace(location.pathname+'?'+u.toString()+location.hash)}}catch(e){}}
@@ -138,7 +138,7 @@ async function load(){await drain();const f=t=>sb.from(t).select('*').eq('compan
 let lt=null;function live(){if(chan)sb.removeChannel(chan);chan=sb.channel('cc').on('postgres_changes',{event:'*',schema:'public'},()=>{clearTimeout(lt);lt=setTimeout(refresh,400)}).subscribe()}
 async function refresh(force){if(!sess)return;if(pendingN()||(!force&&Date.now()-lastTap<1500)){clearTimeout(lt);lt=setTimeout(refresh,1500);return}const busy=!force&&document.activeElement&&/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName);if(busy){clearTimeout(lt);lt=setTimeout(refresh,1500);return}
  if(owner)companies=await q(sb.from('companies').select('*').order('name'));else{const c=await q(sb.from('companies').select('*'));if(!c.length){blocked=true;return render()}}
- if(cid)await load();if(V.tab==='company')await loadCoInv(V.id);if(V.tab==='mine'||V.tab==='mycerts'){}render()}
+ if(cid)await load();if(V.tab==='company')await loadCoInv(V.id);if(V.tab==='backup'){bkList=null;loadBk(V.id||cid).then(()=>render())}if(V.tab==='mine'||V.tab==='mycerts'){}render()}
 const myRole=()=>owner?'admin':me&&me.role;const canEdit=()=>['admin','scheduler'].includes(myRole());const isAdmin=()=>myRole()==='admin';
 const cert=id=>D.certs.find(c=>c.id===id),person=id=>D.people.find(p=>p.id===id),job=id=>D.jobs.find(j=>j.id===id);
 const comp=()=>companies.find(c=>c.id===cid)||{};
@@ -183,8 +183,8 @@ function render0(){const a=$('#app');if(!sess)return a.innerHTML=authView();
  else if(role==='tech')tabs=[['mine','👷','My job'],['mycerts','🪪','My certs']];
  else{tabs=[['jobs','🗼','Jobs'],['people','👥','People'],['setup','⚙️','Setup']];if(role==='admin')tabs.push(['admin','🔑','Admin'])}
  if(owner&&cid)tabs.push(['owner','🏢','Owner']);
- const views={owner:ownerView,company:companyView,invco:inviteCoView,jobs:jobsView,job:jobView,newjob:newJobView,people:peopleView,person:personView,setup:setupView,list:listView,admin:adminView,mine:mineView,mycerts:myCertsView,account:accountView,invready:inviteReadyView,certs:certsView,lists:listsView,import:importView,user:userView,invite:inviteView,activity:activityView};
- const top=V.tab.startsWith('own')||['company','invco'].includes(V.tab)||(V.tab==='invready'&&owner&&!cid)||(owner&&!cid)?'owner':({job:'jobs',newjob:'jobs',person:'people',list:'setup',lists:'setup',certs:'setup',import:'setup',user:'admin',invite:'admin',activity:'admin'}[V.tab]||V.tab);
+ const views={owner:ownerView,company:companyView,invco:inviteCoView,jobs:jobsView,job:jobView,newjob:newJobView,people:peopleView,person:personView,setup:setupView,list:listView,admin:adminView,mine:mineView,mycerts:myCertsView,account:accountView,invready:inviteReadyView,certs:certsView,lists:listsView,import:importView,backup:backupView,user:userView,invite:inviteView,activity:activityView};
+ const top=V.tab.startsWith('own')||['company','invco'].includes(V.tab)||(V.tab==='invready'&&owner&&!cid)||(owner&&!cid)?'owner':({job:'jobs',newjob:'jobs',person:'people',list:'setup',lists:'setup',certs:'setup',import:'setup',backup:owner&&!cid?'owner':'setup',user:'admin',invite:'admin',activity:'admin'}[V.tab]||V.tab);
  a.innerHTML=`<header><div class="logo">${owner&&!cid?'Owner dashboard':esc(c.name||'Cert Compliance')}<small>${owner?'Platform owner'+(cid?' · viewing as Admin':''):esc(cap(role))+(me&&me.position?' · '+esc(me.position):'')}</small></div><button class="av" onclick="go('account')" aria-label="Account">${esc(ini((me&&me.name)||sess.user.email))}</button></header>
  <main>${(views[V.tab]||jobsView)()}</main>${tabs.length>1?`<nav class="bt">${tabs.map(t=>`<button class="${top===t[0]?'on':''}" onclick="${t[0]==='owner'?'ownerHome()':`go('${t[0]}')`}"><i>${t[1]}</i>${t[2]}</button>`).join('')}</nav>`:''}`
  postRender()}
@@ -362,7 +362,7 @@ async function viewPhoto(path,el){const {data}=await q(sb.storage.from('cert-pho
 /* ---------- setup ---------- */
 function setupView(){const n=(a,s,p)=>`${a.length} ${a.length==1?s:p}`;return `<h1>Setup</h1><div class="sub" style="margin:-6px 0 12px">What each job needs. Tap a row to edit.</div>
  <div class="card" style="padding:4px 16px">${nrow("go('certs')",'📜 Certs',n(D.certs,'cert','certs')+' · validity periods')}${nrow("go('lists',{k:'types'})",'🛠 Job types',n(D.types,'type','types')+' · certs each one needs')}${nrow("go('lists',{k:'custs'})",'🏢 Customers',n(D.custs,'customer','customers')+' · extra certs they require')}</div>
- ${isAdmin()?`<div class="card" style="padding:4px 16px">${nrow("go('import')",'📥 Import','From backup file or old app on this phone')}</div>`:''}
+ ${isAdmin()?`<div class="card" style="padding:4px 16px">${nrow(`openBk('${cid}')`,'🛟 Backup &amp; restore','Download, saved backups, restore')}${nrow("go('import')",'📥 Import','From old app on this phone')}</div>`:''}
  <div class="note">Required certs for a new job = job type's certs + customer's certs.</div>`}
 function certsView(){return `<button class="back" onclick="goBack('setup')">← Setup</button><h1>Certs</h1><div class="card"><div class="sh"><h2>Certs · ${D.certs.length}</h2></div>${D.certs.map(c=>`<div class="crow"><div class="grow"><div class="t">${esc(c.name)}</div><div class="sub">${c.valid_n?`Valid for ${c.valid_n} ${c.valid_u}`:'No set validity'}</div></div><button class="x" aria-label="Delete ${esc(c.name)}" onclick="certDel('${c.id}')">✕</button></div>`).join('')||'<div class="empty">No certs yet.</div>'}</div>
  <div class="card"><div class="sh"><h2>Add a cert</h2></div><label>Name<input id="nc" placeholder="e.g. Climber / Rescue"></label><div class="row"><label>Valid for<input id="ncN" type="number" min="0" placeholder="—"></label><label>&nbsp;<select id="ncU"><option>years</option><option>months</option><option>days</option></select></label></div><button class="btn" onclick="busy(this,certAdd)">Add cert</button></div>`}
@@ -463,6 +463,44 @@ function myCertsView(){const p=D.people[0];if(!p)return mineView();const my=D.ce
  return `<h1>My certs</h1><p class="sub">Dates are set by your Scheduler. You can upload a photo of each card.</p><div class="card">${my.map(c=>{const h=pc(p.id,c.id),s=status(p.id,c.id);return `<div class="cb"><div class="grow"><div class="t">${esc(c.name)} ${s==='expired'?'<span class="pill r">Expired</span>':s==='soon'?'<span class="pill a">Expires soon</span>':'<span class="pill g">Current</span>'}</div><div class="sub">${h.acquired?'Acquired '+fmt(h.acquired):''}${h.expires?' · Expires '+fmt(h.expires):' · No expiry'}</div>
  <label class="lnk" style="display:inline-block;cursor:pointer">📷 ${h.photo_path?'Replace photo':'Upload photo'}<input type="file" accept="image/*" style="display:none" onchange="upPhoto('${h.id}','${p.id}',this.files[0])"></label>${h.photo_path?` <button class="lnk" onclick="viewPhoto('${h.photo_path}',this)">View photo</button>`:''}</div></div>`}).join('')||'<p class="sub">No certs on file yet.</p>'}</div>`}
 
+/* ---------- backup & restore ---------- */
+const BKN='Backups include everything except cert photo files themselves.';
+const bkCo=()=>V.id||cid;const bkName=id=>(companies.find(c=>c.id===id)||{}).name||'Company';
+const bkFile=n=>`CertCompliance-${String(n).replace(/[^A-Za-z0-9]+/g,'-').replace(/^-|-$/g,'')||'company'}-${today()}.json`;
+const bkCounts=d=>({certs:(d.certs||[]).length,people:(d.people||[]).length,jobs:(d.jobs||[]).length,person_certs:(d.person_certs||[]).length,job_types:(d.job_types||[]).length,customers:(d.customers||[]).length});
+const bkSum=c=>`${c.people} people · ${c.certs} certs · ${c.jobs} jobs · ${c.person_certs} person certs · ${c.job_types} types · ${c.customers} customers`;
+const bkWhen=t=>new Date(t).toLocaleString(undefined,{month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit'});
+const BKK={auto:['Auto','b'],manual:['Saved','g'],'pre-restore':['Before restore','y']};
+let bkList=null;
+async function loadBk(id){bkList=await q(sb.rpc('backup_list',{cid:id}))}
+async function openBk(id){V.rs=null;bkList=null;go('backup',{id});await loadBk(id);render()}
+async function shareFile(name,obj){const blob=new Blob([JSON.stringify(obj,null,1)],{type:'application/json'});
+ try{const f=new File([blob],name,{type:'application/json'});if(navigator.canShare&&navigator.canShare({files:[f]})&&/iP(hone|ad|od)|Android/.test(navigator.userAgent)){await navigator.share({files:[f],title:name});return}}catch(e){if(e&&e.name==='AbortError')return}
+ const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1500)}
+async function bkDownload(id){const d=await q(sb.rpc('export_company',{cid:id}));await shareFile(bkFile(d.company.name),d);toast('Backup downloaded')}
+async function bkDownloadAll(){const out={app:'CertCompliance',kind:'all-companies',version:1,created_at:new Date().toISOString(),companies:[]};for(const c of companies)out.companies.push(await q(sb.rpc('export_company',{cid:c.id})));await shareFile(`CertCompliance-all-companies-${today()}.json`,out);toast(`Downloaded ${out.companies.length} companies`)}
+async function bkSaveNow(id){await q(sb.rpc('save_backup',{cid:id}),'Backup saved');await loadBk(id);render()}
+async function bkGet(bid){const [r]=await q(sb.from('company_backups').select('data,created_at,kind').eq('id',bid));return r}
+async function bkSaved(bid,dl){const r=await bkGet(bid);if(dl)return shareFile(bkFile(r.data.company&&r.data.company.name||bkName(bkCo())),r.data);V.rs={data:r.data,label:`${(BKK[r.kind]||[r.kind])[0]} backup from ${bkWhen(r.created_at)}`};render(true);setTimeout(()=>{const e=$('#rsCard');e&&e.scrollIntoView({block:'start'})},30)}
+async function bkPick(inp){const f=inp.files[0];if(!f)return;let d;try{d=JSON.parse(await f.text())}catch(e){return toast('That file isn\u2019t a backup')}
+ if(d&&d.kind==='all-companies')d=(d.companies||[]).find(x=>x.company&&x.company.id===bkCo())||(d.companies||[]).find(x=>x.company&&x.company.name===bkName(bkCo()));
+ if(!d||d.app!=='CertCompliance'||!Array.isArray(d.people))return toast('That file isn\u2019t a Cert Compliance backup. For old-app files use Import.');
+ V.rs={data:d,label:`File “${f.name}”`+(d.company&&d.company.name!==bkName(bkCo())?` (from ${d.company.name})`:'')};render(true)}
+function rsCard(){const r=V.rs,n=bkName(bkCo());if(!r)return'';const c=bkCounts(r.data);
+ return `<div class="card" id="rsCard" style="border:2px solid #dc2626"><h2>Restore this backup?</h2><div class="t">${esc(r.label)}</div><div class="sub">Made ${r.data.created_at?bkWhen(r.data.created_at):'unknown date'}</div><p class="sub">${bkSum(c)}</p>
+ <div class="note" style="background:#fef2f2;color:#991b1b">This replaces <b>all</b> of ${esc(n)}’s current certs, people, jobs, types and customers with the backup. A “Before restore” backup is saved first so you can undo. Sign-in accounts aren’t changed.</div>
+ <label>Type <b>${esc(n)}</b> or <b>RESTORE</b> to confirm<input id="rsConf" autocomplete="off" autocapitalize="off"></label>
+ <button class="btn red" id="rsGo" onclick="busy(this,bkRestore)">Restore ${esc(n)}</button><button class="btn sec" style="margin-top:8px" onclick="V.rs=null;render(true)">Cancel</button></div>`}
+async function bkRestore(){const id=bkCo(),n=bkName(id),v=($('#rsConf').value||'').trim();if(v!=='RESTORE'&&v.toLowerCase()!==n.toLowerCase())return toast(`Type ${n} or RESTORE to confirm`);
+ const b=$('#rsGo');if(b)b.textContent='Restoring…';await q(sb.rpc('restore_company',{cid:id,d:V.rs.data}));V.rs=null;if(cid===id)await load();await loadBk(id);toast('Restored. A “Before restore” backup was saved.');render(true)}
+function backupView(){const id=bkCo(),n=bkName(id),fromOwner=owner&&!cid;
+ return `<button class="back" onclick="goBack('${fromOwner?'owner':'setup'}')">← ${fromOwner?esc(n):'Setup'}</button><h1>Backup &amp; restore</h1><div class="note">🛟 ${BKN}</div>
+ <div class="card"><h2>Download</h2><p class="sub" style="margin-top:0">Save a copy of ${esc(n)} to your phone or computer.</p><button class="btn" onclick="busy(this,()=>bkDownload('${id}'))">⬇️ Download backup</button>
+ <button class="btn sec" style="margin-top:8px" onclick="busy(this,()=>bkSaveNow('${id}'))">💾 Save a backup now</button><p class="sub" style="margin-bottom:0">Saved automatically every night. The last 30 are kept.</p></div>
+ ${rsCard()}
+ <div class="card"><h2>Restore</h2><label class="btn sec" style="cursor:pointer">📄 Restore from backup file<input type="file" accept=".json,application/json,text/plain,*/*" style="display:none" onchange="bkPick(this)"></label>
+ <h2 style="margin-top:14px">Saved backups${bkList?` (${bkList.length})`:''}</h2>${bkList==null?'<p class="sub"><span class="spin"></span> Loading…</p>':bkList.map(b=>`<div class="item bk" style="cursor:default"><div class="grow"><div class="t">${bkWhen(b.created_at)} <span class="pill ${(BKK[b.kind]||[])[1]||'b'}">${(BKK[b.kind]||[b.kind])[0]}</span></div><div class="sub">${bkSum(b.counts)}</div></div><button class="add" aria-label="Download" onclick="busy(this,()=>bkSaved('${b.id}',1))">⬇️</button><button class="add" onclick="busy(this,()=>bkSaved('${b.id}'))">Restore</button></div>`).join('')||'<p class="sub">No saved backups yet. Tap “Save a backup now”.</p>'}</div>`}
+
 /* ---------- owner ---------- */
 function ownerHome(){cid=null;localStorage.removeItem('cc.app.ownerCid');D=null;go('owner')}
 async function openCo(id){cid=id;localStorage.setItem('cc.app.ownerCid',id);await load();go('jobs')}
@@ -470,7 +508,7 @@ function coStat(c){if(!c.active)return'<span class="pill r">Access off</span>';i
 function ownerView(){const on=companies.filter(c=>c.active).length,mrr=companies.filter(c=>c.active&&!(c.trial_ends&&c.trial_ends>=today())).reduce((s,c)=>s+(+c.price||0),0);
  return `<h1>Companies</h1><div class="row" style="margin-bottom:12px"><div class="card" style="margin:0;padding:12px"><div class="sub">With access</div><div class="big" style="font-size:24px">${on}/${companies.length}</div></div><div class="card" style="margin:0;padding:12px"><div class="sub">Monthly (set prices)</div><div class="big" style="font-size:24px">$${mrr.toFixed(0)}</div></div></div>
  <button class="btn" onclick="go('invco')">＋ Invite a company</button><div class="card" style="padding:4px 14px;margin-top:12px">${companies.map(c=>`<div class="item"><div class="grow" onclick="openCompany('${c.id}')"><div class="t">${esc(c.name)}${c.is_test?' <span class="chip">TEST</span>':''}</div><div class="sub">${c.price?'$'+(+c.price).toFixed(0)+(c.plan==='per_user'?'/user':'')+'/mo · ':''}${coStat(c)}</div></div><input type="checkbox" class="sw" ${c.active?'checked':''} aria-label="Access" onchange="coAccess('${c.id}',this.checked)"></div>`).join('')||'<p class="sub">No companies yet.</p>'}</div>
- <div class="note">💳 Billing with Stripe comes later. For now, switch access on or off by hand.</div>`}
+ <button class="btn sec" onclick="busy(this,bkDownloadAll)">⬇️ Download all companies</button><div class="note">🛟 ${BKN}</div><div class="note">💳 Billing with Stripe comes later. For now, switch access on or off by hand.</div>`}
 async function coAccess(id,on){if(!on&&!confirm('Turn off access? Their people won\u2019t be able to sign in. Data is kept.'))return render();await q(sb.from('companies').update({active:on}).eq('id',id),on?'Access on':'Access off — data kept');companies=await q(sb.from('companies').select('*').order('name'));render()}
 function companyView(){const c=companies.find(x=>x.id===V.id);if(!c)return ownerView();
  return `<button class="back" onclick="goBack('owner')">← Companies</button><div class="card"><div class="row" style="align-items:center"><h1 class="grow">${esc(c.name)}</h1><span style="flex:none">${coStat(c)}</span></div>
@@ -479,7 +517,7 @@ function companyView(){const c=companies.find(x=>x.id===V.id);if(!c)return owner
  <label>Trial ends<input id="ctr" type="date" value="${c.trial_ends||''}"></label><label>Notes<textarea id="cno" rows="2">${esc(c.notes||'')}</textarea></label><button class="btn" onclick="busy(this,()=>coSave('${c.id}'))">Save</button></div>
  <div class="card"><h2>Waiting to sign up (${coInv.length})</h2>${coInv.length?invRows(coInv):'<p class="sub">Nobody waiting. Everyone invited has signed up.</p>'}</div>
  <div class="card"><h2>Billing</h2><div class="note">💳 Stripe billing isn't connected yet. Once it is, this shows payments and turns access off automatically after a 7-day grace period.</div></div>
- <button class="btn sec" onclick="openCo('${c.id}')">Open company as Admin ›</button><button class="btn red" style="margin-top:10px" onclick="coDel('${c.id}')">Delete company and all its data</button>`}
+ <div class="card" style="padding:4px 16px">${nrow(`openBk('${c.id}')`,'🛟 Backup &amp; restore','Download, saved backups, restore')}</div><button class="btn sec" onclick="openCo('${c.id}')">Open company as Admin ›</button><button class="btn red" style="margin-top:10px" onclick="coDel('${c.id}')">Delete company and all its data</button>`}
 async function coSave(id){await q(sb.from('companies').update({name:$('#cn').value.trim(),plan:$('#cpl').value,price:$('#cpr').value||null,trial_ends:$('#ctr').value||null,notes:$('#cno').value}).eq('id',id),'Saved');companies=await q(sb.from('companies').select('*').order('name'));render()}
 async function coDel(id){const c=companies.find(x=>x.id===id);if(prompt(`Type the company name to permanently delete it:\n${c.name}`)!==c.name)return;await q(sb.from('companies').delete().eq('id',id),'Deleted');companies=await q(sb.from('companies').select('*').order('name'));go('owner')}
 function inviteCoView(){return `<button class="back" onclick="goBack('owner')">← Companies</button><h1>Invite a company</h1><div class="card"><label>Company name<input id="ncn" placeholder="e.g. Example Towers Inc."></label><label>Admin's name<input id="nan"></label><label>Admin's email<input id="nae" type="email"></label>
