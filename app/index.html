@@ -30,7 +30,7 @@ input,select,textarea{font:inherit;font-size:16px;width:100%;padding:10px;border
 </style></head><body><div id="app"><main class="center"><div class="card">Loading…</div></main></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-const BUILD='20261012203525';
+const BUILD='20261012204310';
 async function checkVer(){try{const r=await fetch('version.txt?'+Date.now(),{cache:'no-store'});if(!r.ok)return;const v=(await r.text()).trim();
  if(v&&v!==BUILD&&sessionStorage.getItem('cc.app.reloaded')!==v){sessionStorage.setItem('cc.app.reloaded',v);const u=new URLSearchParams(location.search);u.set('v',v);location.replace(location.pathname+'?'+u.toString()+location.hash)}}catch(e){}}
 checkVer();document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')checkVer()});
@@ -77,14 +77,14 @@ function authView(){if(V.tab==='reset')return `<main class="center"><div class="
  <p class="sub" style="text-align:center">Accounts are invite-only. Your company Admin sends your invite.</p></main>`}
 
 /* ---------- data ---------- */
-async function load(){const f=t=>sb.from(t).select('*').eq('company_id',cid);const role=myRole();
+async function load(){await drain();const f=t=>sb.from(t).select('*').eq('company_id',cid);const role=myRole();
  const [certs,types,custs,people,pcs,jobs]=await Promise.all(['certs','job_types','customers','people','person_certs','jobs'].map(t=>q(f(t))));
  D={certs:certs.sort((a,b)=>a.name.localeCompare(b.name)),types,custs,people:people.sort((a,b)=>a.name.localeCompare(b.name)),pcs,jobs:jobs.sort((a,b)=>(a.site||'').localeCompare(b.site||'')),profiles:[],invites:[],audit:[]};
  if(role==='admin'||role==='scheduler'){D.profiles=await q(sb.from('profiles').select('*').eq('company_id',cid));D.audit=await q(sb.from('audit_log').select('*').eq('company_id',cid).order('at',{ascending:false}).limit(200))}
  if(role==='admin')D.invites=await q(sb.from('pending_invites').select('*').eq('company_id',cid));
  if(role==='tech'){crew=(await q(sb.rpc('my_crew')))||[]}}
 let lt=null;function live(){if(chan)sb.removeChannel(chan);chan=sb.channel('cc').on('postgres_changes',{event:'*',schema:'public'},()=>{clearTimeout(lt);lt=setTimeout(refresh,400)}).subscribe()}
-async function refresh(force){if(!sess)return;const busy=!force&&document.activeElement&&/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName);if(busy){clearTimeout(lt);lt=setTimeout(refresh,1500);return}
+async function refresh(force){if(!sess)return;if(pendingN()||(!force&&Date.now()-lastTap<1500)){clearTimeout(lt);lt=setTimeout(refresh,1500);return}const busy=!force&&document.activeElement&&/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName);if(busy){clearTimeout(lt);lt=setTimeout(refresh,1500);return}
  if(owner)companies=await q(sb.from('companies').select('*').order('name'));else{const c=await q(sb.from('companies').select('*'));if(!c.length){blocked=true;return render()}}
  if(cid)await load();if(V.tab==='company')await loadCoInv(V.id);if(V.tab==='mine'||V.tab==='mycerts'){}render()}
 const myRole=()=>owner?'admin':me&&me.role;const canEdit=()=>['admin','scheduler'].includes(myRole());const isAdmin=()=>myRole()==='admin';
@@ -114,6 +114,7 @@ function goBack(fb){if(depth>0){history.back()}else go(fb||homeTab(),null,true)}
 addEventListener('popstate',async e=>{const st=e.state;if(!st||!sess)return;depth=Math.max(0,depth-1);V=st.V;
  if(owner&&st.cid!==cid){cid=st.cid;if(cid){localStorage.setItem('cc.app.ownerCid',cid);await load()}else{localStorage.removeItem('cc.app.ownerCid');D=null}}
  if(V.tab==='company')await loadCoInv(V.id);render();scrollTo(0,0)});
+addEventListener('pagehide',()=>{Object.keys(SQ).forEach(k=>{if(SQ[k].t)flush(k)})});document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')Object.keys(SQ).forEach(k=>{if(SQ[k].t)flush(k)})});
 /* pull to refresh */
 (()=>{let y0=null,dy=0,el=null;const ind=()=>{if(!el){el=document.createElement('div');el.id='ptr';document.body.appendChild(el)}return el};
  addEventListener('touchstart',e=>{if(!sess||scrollY>0||e.touches.length>1||e.target.closest('input,textarea,select,.sug'))return y0=null;y0=e.touches[0].clientY;dy=0},{passive:true});
@@ -133,17 +134,32 @@ function render(){const a=$('#app');if(!sess)return a.innerHTML=authView();
  <main>${(views[V.tab]||jobsView)()}</main>${tabs.length>1?`<nav class="bt">${tabs.map(t=>`<button class="${top===t[0]?'on':''}" onclick="${t[0]==='owner'?'ownerHome()':`go('${t[0]}')`}"><i>${t[1]}</i>${t[2]}</button>`).join('')}</nav>`:''}`}
 const cap=s=>s?s[0].toUpperCase()+s.slice(1):'';const ini=s=>String(s).split(/[\s@.]+/).filter(Boolean).slice(0,2).map(x=>x[0].toUpperCase()).join('');
 function accountView(){return `<button class="back" onclick="goBack()">← Back</button><div class="card"><h2>Account</h2><div class="t">${esc(me&&me.name||'')}</div><div class="sub">${esc(sess.user.email)}</div><div class="sub">${owner?'Platform owner':esc(cap(me.role))}${me&&me.position?' · '+esc(me.position):''}</div>
- <label style="margin-top:12px">Your name<input id="myname" value="${esc(me&&me.name||'')}"></label>${owner||isAdmin()?'<button class="btn sec" onclick="saveMyName()">Save name</button>':''}
+ <label style="margin-top:12px">Your name<input id="myname" value="${esc(me&&me.name||'')}"></label>${owner||isAdmin()?'<button class="btn sec" onclick="busy(this,saveMyName)">Save name</button>':''}
  <button class="btn sec" onclick="sb.auth.resetPasswordForEmail(sess.user.email,{redirectTo:location.origin+location.pathname}).then(()=>toast('Reset link emailed'))">Email me a password reset link</button><button class="btn red" style="margin-top:10px" onclick="signOut()">Sign out</button></div>`}
 async function saveMyName(){await q(sb.from('profiles').update({name:$('#myname').value.trim()}).eq('id',sess.user.id),'Saved');me.name=$('#myname').value.trim();render()}
 
+/* ---------- save queue: optimistic local state, debounced per-record saves ---------- */
+const SQ={};let lastTap=0;const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const pendingN=()=>Object.values(SQ).filter(x=>x.t||x.busy).length;
+function syncNote(){const n=pendingN();let el=$('#sync');if(!el){el=document.createElement('div');el.id='sync';el.style.cssText='position:fixed;top:max(14px,env(safe-area-inset-top));right:56px;z-index:30;font-size:12px;font-weight:700;color:#cbd5e1';document.body.appendChild(el)}el.textContent=n?'Saving…':''}
+function queue(k,fn){lastTap=Date.now();const s=SQ[k]||(SQ[k]={});s.fn=fn;clearTimeout(s.t);s.t=setTimeout(()=>flush(k),400);syncNote()}
+async function flush(k){const s=SQ[k];if(!s)return;clearTimeout(s.t);s.t=null;if(s.busy){s.again=true;return}s.busy=true;syncNote();
+ let err=null;try{err=await s.fn()}catch(e){err=e}s.busy=false;
+ if(err){s.failed=true;toast('Couldn\u2019t save: '+((err&&err.message)||'error')+' — refreshing');}
+ if(s.again){s.again=false;return flush(k)}
+ if(!s.t){const f=s.failed;delete SQ[k];if(f){await sleep(50);if(!pendingN()){await load();render()}}else if(!pendingN()&&V.tab==='person'&&!(document.activeElement&&document.activeElement.type==='date'))render()}syncNote()}
+async function drain(){Object.keys(SQ).forEach(k=>{if(SQ[k].t)flush(k)});while(pendingN())await sleep(80)}
+function saveRow(table,id,fields){const get=()=>{const r=findRow(table,id);if(!r)return null;const o={};fields.forEach(f=>o[f]=r[f]);return o};
+ queue(table+':'+id+':'+fields.join(','),async()=>{const patch=get();if(!patch)return null;const {error}=await sb.from(table).update(patch).eq('id',id);return error})}
+function findRow(table,id){const m={jobs:D.jobs,job_types:D.types,customers:D.custs,people:D.people};return (m[table]||[]).find(x=>x.id===id)}
+async function busy(el,fn){if(el.disabled)return;el.disabled=true;const t=el.textContent;try{await fn()}catch(e){}finally{el.disabled=false}}
 /* ---------- jobs ---------- */
 function jobsView(){const s=(V.q||'').toLowerCase(),list=D.jobs.filter(j=>!s||[j.site,j.type,j.customer].join(' ').toLowerCase().includes(s)),nc=D.jobs.filter(jobBad).length;
  return `<div class="row" style="align-items:center"><h1>Jobs</h1><span style="flex:none">${nc?`<span class="pill r">${nc} need attention</span>`:D.jobs.length?'<span class="pill g">All compliant</span>':''}</span></div>
  <button class="btn" onclick="go('newjob')">＋ New job</button><input placeholder="Search jobs…" value="${esc(V.q||'')}" oninput="V.q=this.value;const p=this.selectionStart;render();const i=$('main input');i.focus();i.setSelectionRange(p,p)">
  <div class="card" style="padding:4px 14px">${list.map(j=>`<div class="item" onclick="go('job',{id:'${j.id}'})"><div class="grow"><div class="t" style="font-size:17px">${esc(j.site||j.type||'Untitled job')}</div><div class="sub">${esc([j.site?j.type:'',j.customer].filter(Boolean).join(' · '))} · ${j.crew.length} crew</div></div>${jpill(j)}</div>`).join('')||'<p class="sub">No jobs yet. Tap “New job”.</p>'}</div>`}
 function newJobView(){const o=(arr,ph)=>`<option value="">${ph}</option>`+arr.map(x=>`<option>${esc(x.name)}</option>`).join('');
- return `<button class="back" onclick="goBack('jobs')">← Jobs</button><div class="card"><h2>New job</h2><label>Site<input id="js" placeholder="Site ID, e.g. A1N0001"></label><label>Job type<select id="jt" onchange="prevNew()">${o(D.types,'Choose a job type')}</select></label><label>Customer<select id="jcu" onchange="prevNew()">${o(D.custs,'No customer')}</select></label><div id="prev"></div><button class="btn" onclick="addJob()">Create job</button></div>`}
+ return `<button class="back" onclick="goBack('jobs')">← Jobs</button><div class="card"><h2>New job</h2><label>Site<input id="js" placeholder="Site ID, e.g. A1N0001"></label><label>Job type<select id="jt" onchange="prevNew()">${o(D.types,'Choose a job type')}</select></label><label>Customer<select id="jcu" onchange="prevNew()">${o(D.custs,'No customer')}</select></label><div id="prev"></div><button class="btn" onclick="busy(this,addJob)">Create job</button></div>`}
 function reqFrom(t,c){const r=new Set(),o=new Set();[D.types.find(x=>x.name===t),D.custs.find(x=>x.name===c)].filter(Boolean).forEach(x=>{x.certs.forEach(i=>r.add(i));x.one_of.forEach(i=>o.add(i))});return{required:[...r].filter(cert),one_of:[...o].filter(i=>r.has(i))}}
 function prevNew(){const r=reqFrom($('#jt').value,$('#jcu').value);$('#prev').innerHTML=r.required.length?`<div class="note"><b>Required certs:</b> ${r.required.map(i=>esc(cert(i).name)+(r.one_of.includes(i)?' (1+)':'')).join(', ')}</div>`:''}
 async function addJob(){const t=$('#jt').value,c=$('#jcu').value,s=$('#js').value.trim();if(!s&&!t)return toast('Enter a site or job type');const r=reqFrom(t,c);
@@ -161,29 +177,29 @@ function jobView(){const j=job(V.id);if(!j)return jobsView();const ed=canEdit(),
  ${hist.length?`<h2 style="margin-top:6px">History</h2>${hist.map(h=>`<div class="sub">${new Date(h.at).toLocaleString()} — ${esc(h.user_name)} ${esc(h.action)}d</div>`).join('')}`:''}
  ${ed?`<button class="btn red" style="margin-top:12px" onclick="jobDel('${j.id}')">Delete job</button>`:''}</div>`}
 async function jobSet(id,patch){await q(sb.from('jobs').update(patch).eq('id',id),'Saved');await load();render()}
-async function reqTog(id,c,on){const j=job(id);const r=on?[...new Set([...j.required,c])]:j.required.filter(x=>x!==c);await jobSet(id,{required:r,one_of:j.one_of.filter(x=>r.includes(x))})}
-async function oneTog(id,c,on){const j=job(id);await jobSet(id,{one_of:on?[...new Set([...j.one_of,c])]:j.one_of.filter(x=>x!==c)})}
+async function reqTog(id,c,on){const j=job(id);j.required=on?[...new Set([...j.required,c])]:j.required.filter(x=>x!==c);j.one_of=j.one_of.filter(x=>j.required.includes(x));render();saveRow('jobs',id,['required','one_of'])}
+async function oneTog(id,c,on){const j=job(id);j.one_of=on?[...new Set([...j.one_of,c])]:j.one_of.filter(x=>x!==c);render();saveRow('jobs',id,['required','one_of'])}
 async function jobDel(id){if(!confirm('Delete this job?'))return;await q(sb.from('jobs').delete().eq('id',id),'Job deleted');await load();go('jobs')}
-async function crewDel(id,pid){await jobSet(id,{crew:job(id).crew.filter(x=>x!==pid)})}
+async function crewDel(id,pid){const j=job(id);j.crew=j.crew.filter(x=>x!==pid);render();saveRow('jobs',id,['crew'])}
 function fit(j,p){return j.required.filter(c=>isOne(j,c)&&!holders(j,c).length&&!bad(status(p.id,c))).length>0}
 function sugShow(id){const j=job(id),s=($('#crewIn').value||'').toLowerCase(),c=D.people.filter(p=>!j.crew.includes(p.id)&&p.name.toLowerCase().includes(s));
  const G={r:[],m:[],o:[]};c.forEach(p=>{const oj=jobOf(p.id);if(oj)G.o.push([p,oj]);else if(j.required.some(x=>!isOne(j,x)&&bad(status(p.id,x))))G.m.push([p]);else G.r.push([p])});
  const row=([p,oj])=>`<div class="item" onclick="crewAdd('${id}','${p.id}')"><div class="grow"><div class="t">${esc(p.name)} ${posChip(p.position)} ${!oj&&fit(j,p)?'<span class="pill b">Best fit</span>':''}</div>${oj?`<div class="sub">On ${esc(oj.site||oj.type)} — tap to move here</div>`:''}</div>${oj?'<span class="pill n">Busy</span>':personPill(p,j)}</div>`;
  G.r.sort((a,b)=>fit(j,b[0])-fit(j,a[0]));
  $('#sug').innerHTML=c.length?`<div class="sug">${G.r.length?'<div class="h">Ready</div>'+G.r.map(row).join(''):''}${G.m.length?'<div class="h">Missing certs</div>'+G.m.map(row).join(''):''}${G.o.length?'<div class="h">On another job</div>'+G.o.map(row).join(''):''}</div>`:'<p class="sub">No matches. Add people on the People tab.</p>'}
-async function crewAdd(id,pid){const oj=jobOf(pid);if(oj&&oj.id!==id){if(!confirm(`${person(pid).name} is on ${oj.site||oj.type}. Move them here?`))return;await q(sb.from('jobs').update({crew:oj.crew.filter(x=>x!==pid)}).eq('id',oj.id))}
- await jobSet(id,{crew:[...job(id).crew,pid]});const i=$('#crewIn');if(i){i.focus();sugShow(id)}}
+async function crewAdd(id,pid){const oj=jobOf(pid);if(oj&&oj.id!==id){if(!confirm(`${person(pid).name} is on ${oj.site||oj.type}. Move them here?`))return;oj.crew=oj.crew.filter(x=>x!==pid);saveRow('jobs',oj.id,['crew'])}
+ const j=job(id);if(!j.crew.includes(pid))j.crew=[...j.crew,pid];render();saveRow('jobs',id,['crew']);const i=$('#crewIn');if(i){i.focus();sugShow(id)}}
 
 /* ---------- people ---------- */
 function peopleView(){const s=(V.q||'').toLowerCase(),l=D.people.filter(p=>p.name.toLowerCase().includes(s));
- return `<h1>People</h1><div class="row"><input id="np" placeholder="New person's name" style="flex:2"><button class="btn" style="flex:1;margin-top:4px;height:44px" onclick="addPerson()">Add</button></div>
+ return `<h1>People</h1><div class="row"><input id="np" placeholder="New person's name" style="flex:2"><button class="btn" style="flex:1;margin-top:4px;height:44px" onclick="busy(this,addPerson)">Add</button></div>
  <input placeholder="Search people…" value="${esc(V.q||'')}" oninput="V.q=this.value;const p=this.selectionStart;render();const i=document.querySelectorAll('main input')[1];i.focus();i.setSelectionRange(p,p)">
  <div class="card" style="padding:4px 14px">${l.map(p=>{const j=jobOf(p.id);return `<div class="item" onclick="go('person',{id:'${p.id}'})"><div class="grow"><div class="t">${esc(p.name)} ${posChip(p.position)}</div><div class="sub">${j?'On '+esc(j.site||j.type):'Available'}${p.user_id?' · has login':''}</div></div>${personSum(p)}</div>`}).join('')||'<p class="sub">No people yet.</p>'}</div>`}
 async function addPerson(){const n=$('#np').value.trim();if(!n)return toast('Enter a name');const [p]=await q(sb.from('people').insert({company_id:cid,name:n}).select(),'Added — now tick their certs');await load();go('person',{id:p.id})}
 function certRows(pid,ed,techUpload){return D.certs.map(c=>{const h=pc(pid,c.id),s=h?status(pid,c.id):'';
  return `<div class="cb"><input type="checkbox" ${h?'checked':''} ${ed?'':'disabled'} onchange="pcTog('${pid}','${c.id}',this.checked)"><div class="grow"><div class="t">${esc(c.name)} ${s==='expired'?'<span class="pill r">Expired</span>':s==='soon'?'<span class="pill a">Expires soon</span>':h?'<span class="pill g">Current</span>':''}</div>
- ${h?`<div class="dates"><label>Acquired<input type="date" value="${h.acquired||''}" ${ed?'':'disabled'} onchange="pcDate('${h.id}','acquired',this.value,'${c.id}')"></label><label>Expires${c.valid_n?` <span class="sub">(${c.valid_n} ${c.valid_u})</span>`:''}<input type="date" value="${h.expires||''}" ${ed?'':'disabled'} onchange="pcDate('${h.id}','expires',this.value)"></label></div>
- ${ed||techUpload?`<label class="lnk" style="display:inline-block;cursor:pointer">📷 ${h.photo_path?'Replace photo':'Upload photo'}<input type="file" accept="image/*" style="display:none" onchange="upPhoto('${h.id}','${pid}',this.files[0])"></label>`:''}${h.photo_path?` <button class="lnk" onclick="viewPhoto('${h.photo_path}',this)">View photo</button>`:''}`:''}</div></div>`}).join('')||'<p class="sub">No certs set up yet (Setup tab).</p>'}
+ ${h?`<div class="dates"><label>Acquired<input type="date" value="${h.acquired||''}" ${ed&&!String(h.id).startsWith('tmp')?'':'disabled'} onchange="pcDate('${h.id}','acquired',this.value,'${c.id}')"></label><label>Expires${c.valid_n?` <span class="sub">(${c.valid_n} ${c.valid_u})</span>`:''}<input type="date" value="${h.expires||''}" ${ed&&!String(h.id).startsWith('tmp')?'':'disabled'} onchange="pcDate('${h.id}','expires',this.value)"></label></div>
+ ${(ed||techUpload)&&!String(h.id).startsWith('tmp')?`<label class="lnk" style="display:inline-block;cursor:pointer">📷 ${h.photo_path?'Replace photo':'Upload photo'}<input type="file" accept="image/*" style="display:none" onchange="upPhoto('${h.id}','${pid}',this.files[0])"></label>`:''}${h.photo_path?` <button class="lnk" onclick="viewPhoto('${h.photo_path}',this)">View photo</button>`:''}`:''}</div></div>`}).join('')||'<p class="sub">No certs set up yet (Setup tab).</p>'}
 function personView(){const p=person(V.id);if(!p)return peopleView();const ed=canEdit(),j=jobOf(p.id);
  return `<button class="back" onclick="goBack('people')">← People</button><div class="card"><label>Name<input value="${esc(p.name)}" onchange="pSet('${p.id}',{name:this.value.trim()})"></label>
  <label>Position ${isAdmin()?'':'<span class="sub">🔒 Only an Admin can change this</span>'}<select ${isAdmin()?'':'disabled'} onchange="pSet('${p.id}',{position:this.value||null})"><option value="">—</option>${POS.map(x=>`<option ${x===p.position?'selected':''}>${x}</option>`).join('')}</select></label>
@@ -191,7 +207,10 @@ function personView(){const p=person(V.id);if(!p)return peopleView();const ed=ca
  <div class="card"><h2>Certs</h2>${certRows(p.id,ed)}</div>${ed?`<button class="btn red" onclick="pDel('${p.id}')">Remove person</button>`:''}`}
 async function pSet(id,patch){await q(sb.from('people').update(patch).eq('id',id),'Saved');await load();render()}
 async function pDel(id){if(!confirm('Remove this person and their certs?'))return;for(const j of D.jobs.filter(j=>j.crew.includes(id)))await q(sb.from('jobs').update({crew:j.crew.filter(x=>x!==id)}).eq('id',j.id));await q(sb.from('people').delete().eq('id',id),'Removed');await load();go('people')}
-async function pcTog(pid,c,on){if(on)await q(sb.from('person_certs').insert({company_id:cid,person_id:pid,cert_id:c}),'Cert added');else await q(sb.from('person_certs').delete().eq('person_id',pid).eq('cert_id',c),'Cert removed');await load();render()}
+async function pcTog(pid,c,on){const k='pc:'+pid+':'+c;if(!SQ[k]){const r=pc(pid,c);SQ[k]={srv:r&&!String(r.id).startsWith('tmp')?r.id:null}}
+ if(on){if(!pc(pid,c))D.pcs.push({id:'tmp-'+Math.random().toString(36).slice(2),company_id:cid,person_id:pid,cert_id:c,acquired:null,expires:null,photo_path:null})}else D.pcs=D.pcs.filter(x=>!(x.person_id===pid&&x.cert_id===c));render();
+ queue(k,async()=>{const s=SQ[k],want=!!pc(pid,c);if(want&&!s.srv){const {data,error}=await sb.from('person_certs').insert({company_id:cid,person_id:pid,cert_id:c}).select();if(error)return error;s.srv=data[0].id;const r=pc(pid,c);if(r&&String(r.id).startsWith('tmp')){r.id=data[0].id;if(!pendingN()||Object.keys(SQ).length===1)setTimeout(()=>{if(V.tab==='person'&&Date.now()-lastTap>500)render()},0)}}
+  else if(!want&&s.srv){const {error}=await sb.from('person_certs').delete().eq('id',s.srv);if(error)return error;s.srv=null}return null})}
 function addValid(d,n,u){const x=new Date(d+'T12:00');if(u==='months')x.setMonth(x.getMonth()+n);else if(u==='days')x.setDate(x.getDate()+n);else x.setFullYear(x.getFullYear()+n);return x.toISOString().slice(0,10)}
 async function pcDate(id,f,v,c){const patch={[f]:v||null};if(f==='acquired'&&v&&c){const ce=cert(c);if(ce&&ce.valid_n)patch.expires=addValid(v,ce.valid_n,ce.valid_u||'years')}await q(sb.from('person_certs').update(patch).eq('id',id),patch.expires&&f==='acquired'?'Expiry filled in':'Saved');await load();render()}
 async function upPhoto(id,pid,f){if(!f)return;const path=`${cid}/${pid}/${id}-${Date.now()}.${(f.name.split('.').pop()||'jpg').toLowerCase()}`;toast('Uploading…');
@@ -200,9 +219,9 @@ async function viewPhoto(path,el){const {data}=await q(sb.storage.from('cert-pho
 
 /* ---------- setup ---------- */
 function setupView(){return `<h1>Setup</h1><div class="card"><h2>Certs</h2>${D.certs.map(c=>`<div class="item" style="cursor:default"><div class="grow"><div class="t">${esc(c.name)}</div><div class="sub">${c.valid_n?`Valid for ${c.valid_n} ${c.valid_u}`:'No set validity'}</div></div><button class="lnk" style="color:#991b1b" onclick="certDel('${c.id}')">✕</button></div>`).join('')}
- <label style="margin-top:10px">New cert<input id="nc" placeholder="e.g. Climber / Rescue"></label><div class="row"><label>Valid for<input id="ncN" type="number" min="0" placeholder="—"></label><label>&nbsp;<select id="ncU"><option>years</option><option>months</option><option>days</option></select></label></div><button class="btn" onclick="certAdd()">Add cert</button></div>
+ <label style="margin-top:10px">New cert<input id="nc" placeholder="e.g. Climber / Rescue"></label><div class="row"><label>Valid for<input id="ncN" type="number" min="0" placeholder="—"></label><label>&nbsp;<select id="ncU"><option>years</option><option>months</option><option>days</option></select></label></div><button class="btn" onclick="busy(this,certAdd)">Add cert</button></div>
  ${['types','custs'].map(k=>`<div class="card"><h2>${k==='types'?'Job types':'Customers'}</h2>${D[k].map(x=>`<div class="item" onclick="go('list',{k:'${k}',id:'${x.id}'})"><div class="grow"><div class="t">${esc(x.name)}</div><div class="sub">${x.certs.length} required cert${x.certs.length==1?'':'s'}</div></div>›</div>`).join('')}
- <div class="row"><input id="n_${k}" placeholder="New ${k==='types'?'job type':'customer'}" style="flex:2"><button class="btn" style="flex:1;height:44px" onclick="listAdd('${k}')">Add</button></div></div>`).join('')}
+ <div class="row"><input id="n_${k}" placeholder="New ${k==='types'?'job type':'customer'}" style="flex:2"><button class="btn" style="flex:1;height:44px" onclick="busy(this,()=>listAdd('${k}'))">Add</button></div></div>`).join('')}
  ${isAdmin()?`<div class="card" id="impCard"><h2>Import old data</h2><p class="sub">Bring in certs, people, job types, customers and jobs from the old Cert Compliance app. They'll be added to <b>${esc(comp().name)}</b>. Your old app isn't changed.</p>
  <label class="btn" style="cursor:pointer">📄 Import from backup file<input type="file" accept=".json,application/json,text/plain,*/*" style="display:none" onchange="pickBackup(this)"></label><p class="sub" style="margin:6px 0 10px">In the old app tap Backup → Download backup, then pick that file (Files → Downloads).</p>
  <button class="btn sec" onclick="importPhone()">Import from this phone</button>${impPreview()}</div>`:''}`}
@@ -216,8 +235,8 @@ function listView(){const x=D[V.k].find(i=>i.id===V.id);if(!x)return setupView()
  <button class="btn red" style="margin-top:12px" onclick="listDel()">Delete</button></div>`}
 const cur=()=>D[V.k].find(i=>i.id===V.id);
 async function listSet(p){await q(sb.from(TBL[V.k]).update(p).eq('id',V.id),'Saved');await load();render()}
-async function listTog(c,on){const x=cur(),r=on?[...new Set([...x.certs,c])]:x.certs.filter(i=>i!==c);await listSet({certs:r,one_of:x.one_of.filter(i=>r.includes(i))})}
-async function listOne(c,on){const x=cur();await listSet({one_of:on?[...new Set([...x.one_of,c])]:x.one_of.filter(i=>i!==c)})}
+async function listTog(c,on){const x=cur();x.certs=on?[...new Set([...x.certs,c])]:x.certs.filter(i=>i!==c);x.one_of=x.one_of.filter(i=>x.certs.includes(i));render();saveRow(TBL[V.k],x.id,['certs','one_of'])}
+async function listOne(c,on){const x=cur();x.one_of=on?[...new Set([...x.one_of,c])]:x.one_of.filter(i=>i!==c);render();saveRow(TBL[V.k],x.id,['certs','one_of'])}
 async function listDel(){if(!confirm('Delete?'))return;await q(sb.from(TBL[V.k]).delete().eq('id',V.id),'Deleted');await load();go('setup')}
 function normBackup(S){if(!S||typeof S!=='object'||!Array.isArray(S.certs)||!Array.isArray(S.employees)||!Array.isArray(S.jobs))return null;
  const nm=x=>(typeof x==='string'?x:(x&&x.name)||'').trim(),B=S.bundles||[],certIds=new Set(S.certs.map(c=>c.id));
@@ -235,7 +254,7 @@ async function pickBackup(inp){const f=inp.files[0];inp.value='';if(!f)return;le
 function impPreview(){const S=V.imp;if(!S)return V.impErr?`<div class="note" style="background:#fee2e2;color:#991b1b">${esc(V.impErr)}</div>`:'';
  return `<div class="note" style="background:#dbeafe;color:#1e3a8a"><b>${esc(V.impName)}</b><br>${S.certs.length} certs · ${S.employees.length} people · ${S.jobs.length} jobs · ${S.types.length} job types · ${S.custs.length} customers<br>Will be added to <b>${esc(comp().name)}</b>. Anything that already exists (same name) is skipped, so importing twice is safe.</div>
  <button class="btn" id="impGo" onclick="runImport()">Import into ${esc(comp().name)}</button><button class="btn sec" style="margin-top:8px" onclick="V.imp=null;render()">Cancel</button>`}
-async function runImport(){const S=V.imp;if(!S)return;const btn=$('#impGo');if(btn){btn.disabled=true;btn.textContent='Importing…'}
+let importing=false;async function runImport(){const S=V.imp;if(!S||importing)return;importing=true;const btn=$('#impGo');if(btn){btn.disabled=true;btn.textContent='Importing…'}
  try{const L=s=>String(s||'').trim().toLowerCase(),cm={},pm={};let add={certs:0,people:0,jobs:0,lists:0};
  for(const c of S.certs){const ex=D.certs.find(d=>L(d.name)===L(c.name));if(ex)cm[c.id]=ex.id;else{const [n]=await q(sb.from('certs').insert({company_id:cid,name:c.name.trim(),valid_n:c.validN||null,valid_u:c.validU||'years'}).select());cm[c.id]=n.id;D.certs.push(n);add.certs++}}
  const ids=a=>[...new Set((a||[]).map(i=>cm[i]).filter(Boolean))];
@@ -247,7 +266,7 @@ async function runImport(){const S=V.imp;if(!S)return;const btn=$('#impGo');if(b
  for(const j of S.jobs){if(D.jobs.some(d=>L(d.site)===L(j.site)&&L(d.type)===L(j.type)&&L(d.customer)===L(j.customer)))continue;const r=ids(j.required),crew=[...new Set(j.crew.map(i=>pm[i]).filter(i=>i&&!busy.has(i)))];crew.forEach(i=>busy.add(i));
   const [n]=await q(sb.from('jobs').insert({company_id:cid,site:j.site,type:j.type,customer:j.customer,required:r,one_of:ids(j.oneOf).filter(i=>r.includes(i)),crew}).select());D.jobs.push(n);add.jobs++}
  V.imp=null;await load();toast(`Imported ${add.certs} certs, ${add.people} people, ${add.jobs} jobs, ${add.lists} types/customers`);go('jobs')}
- catch(e){if(btn){btn.disabled=false;btn.textContent='Try again'}}}
+ catch(e){if(btn){btn.disabled=false;btn.textContent='Try again'}}finally{importing=false}}
 /* ---------- admin ---------- */
 async function shareLink(e){const url=link(e);if(navigator.share){try{await navigator.share({title:'Join Cert Compliance',text:"You're invited to Cert Compliance. Tap to create your account:",url});return}catch(x){if(x.name==='AbortError')return}}copyLink(e)}
 function invRows(list){return list.map(i=>`<div style="padding:10px 0;border-bottom:1px solid var(--line)"><div class="t">${esc(i.name||i.email)}</div><div class="sub">${esc(i.email)} · ${cap(i.role)}</div>
@@ -260,7 +279,7 @@ function inviteReadyView(){return `<button class="back" onclick="${V.back}">← 
 const link=e=>location.origin+location.pathname+'?invite='+encodeURIComponent(e);
 function adminView(){const ps=D.profiles.slice().sort((a,b)=>(a.name||a.email).localeCompare(b.name||b.email));
  return `<h1>Team &amp; roles</h1><div class="card"><h2>Invite someone</h2><label>Email<input id="ie" type="email"></label><label>Name<input id="in"></label><div class="row"><label>Role<select id="ir"><option value="tech">Tech</option><option value="scheduler">Scheduler</option><option value="admin">Admin</option></select></label><label>Position<select id="ip"><option value="">—</option>${POS.map(x=>`<option>${x}</option>`).join('')}</select></label></div>
- <label>Link to person on the People list (optional)<select id="iper"><option value="">${'Create new for Techs'}</option>${D.people.filter(p=>!p.user_id).map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join('')}</select></label><button class="btn" onclick="invite()">Send invite</button></div>
+ <label>Link to person on the People list (optional)<select id="iper"><option value="">${'Create new for Techs'}</option>${D.people.filter(p=>!p.user_id).map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join('')}</select></label><button class="btn" onclick="busy(this,invite)">Send invite</button></div>
  ${D.invites.length?`<div class="card"><h2>Waiting to sign up</h2>${invRows(D.invites)}</div>`:''}
  <div class="card"><h2>Team (${ps.length})</h2>${ps.map(p=>`<div style="padding:10px 0;border-bottom:1px solid var(--line)"><div class="t">${esc(p.name||p.email)} ${posChip(p.position)}</div><div class="sub">${esc(p.email)}</div>
  <div class="row"><select ${p.id===sess.user.id?'disabled':''} onchange="profSet('${p.id}',{role:this.value})">${['admin','scheduler','tech'].map(r=>`<option value="${r}" ${r===p.role?'selected':''}>${cap(r)}</option>`).join('')}</select><select onchange="profSet('${p.id}',{position:this.value||null})"><option value="">No position</option>${POS.map(x=>`<option ${x===p.position?'selected':''}>${x}</option>`).join('')}</select></div>
@@ -302,7 +321,7 @@ function companyView(){const c=companies.find(x=>x.id===V.id);if(!c)return owner
  return `<button class="back" onclick="goBack('owner')">← Companies</button><div class="card"><div class="row" style="align-items:center"><h1 class="grow">${esc(c.name)}</h1><span style="flex:none">${coStat(c)}</span></div>
  <div class="item" style="cursor:default"><div class="grow"><div class="t">Access</div><div class="sub">Off = members can't sign in. Data is kept.</div></div><input type="checkbox" class="sw" ${c.active?'checked':''} onchange="coAccess('${c.id}',this.checked)"></div>
  <label style="margin-top:10px">Company name<input id="cn" value="${esc(c.name)}"></label><div class="row"><label>Pricing<select id="cpl"><option value="per_company" ${c.plan==='per_company'?'selected':''}>Per company</option><option value="per_user" ${c.plan==='per_user'?'selected':''}>Per user</option></select></label><label>Price $/mo<input id="cpr" type="number" value="${c.price??''}"></label></div>
- <label>Trial ends<input id="ctr" type="date" value="${c.trial_ends||''}"></label><label>Notes<textarea id="cno" rows="2">${esc(c.notes||'')}</textarea></label><button class="btn" onclick="coSave('${c.id}')">Save</button></div>
+ <label>Trial ends<input id="ctr" type="date" value="${c.trial_ends||''}"></label><label>Notes<textarea id="cno" rows="2">${esc(c.notes||'')}</textarea></label><button class="btn" onclick="busy(this,()=>coSave('${c.id}'))">Save</button></div>
  <div class="card"><h2>Waiting to sign up (${coInv.length})</h2>${coInv.length?invRows(coInv):'<p class="sub">Nobody waiting. Everyone invited has signed up.</p>'}</div>
  <div class="card"><h2>Billing</h2><div class="note">💳 Stripe billing isn't connected yet. Once it is, this shows payments and turns access off automatically after a 7-day grace period.</div></div>
  <button class="btn sec" onclick="openCo('${c.id}')">Open company as Admin ›</button><button class="btn red" style="margin-top:10px" onclick="coDel('${c.id}')">Delete company and all its data</button>`}
@@ -310,7 +329,7 @@ async function coSave(id){await q(sb.from('companies').update({name:$('#cn').val
 async function coDel(id){const c=companies.find(x=>x.id===id);if(prompt(`Type the company name to permanently delete it:\n${c.name}`)!==c.name)return;await q(sb.from('companies').delete().eq('id',id),'Deleted');companies=await q(sb.from('companies').select('*').order('name'));go('owner')}
 function inviteCoView(){return `<button class="back" onclick="goBack('owner')">← Companies</button><h1>Invite a company</h1><div class="card"><label>Company name<input id="ncn" placeholder="e.g. Example Towers Inc."></label><label>Admin's name<input id="nan"></label><label>Admin's email<input id="nae" type="email"></label>
  <div class="row"><label>Pricing<select id="npl"><option value="per_company">Per company</option><option value="per_user">Per user</option></select></label><label>Price $/mo<input id="npr" type="number"></label></div><label>Free trial (days, optional)<input id="ntd" type="number" min="0" placeholder="e.g. 30"></label>
- <button class="btn" onclick="inviteCo()">Create company &amp; invite admin</button><p class="sub">You'll get a sign-up link to send to their Admin. They then invite their own team.</p></div>`}
+ <button class="btn" onclick="busy(this,inviteCo)">Create company &amp; invite admin</button><p class="sub">You'll get a sign-up link to send to their Admin. They then invite their own team.</p></div>`}
 async function inviteCo(){const n=$('#ncn').value.trim(),e=$('#nae').value.trim().toLowerCase(),d=parseInt($('#ntd').value);if(!n)return toast('Enter a company name');if(!/^\S+@\S+\.\S+$/.test(e))return toast('Enter the admin\u2019s email');
  const te=d>0?new Date(Date.now()+d*864e5).toISOString().slice(0,10):null;const [c]=await q(sb.from('companies').insert({name:n,plan:$('#npl').value,price:$('#npr').value||null,trial_ends:te}).select());
  await q(sb.from('pending_invites').insert({email:e,company_id:c.id,role:'admin',name:$('#nan').value.trim()||null,invited_by:sess.user.id}));companies=await q(sb.from('companies').select('*').order('name'));await loadCoInv(c.id);go('invready',{email:e,back:"go('company',{id:'"+c.id+"'})"})}
