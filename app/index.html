@@ -30,7 +30,7 @@ input,select,textarea{font:inherit;font-size:16px;width:100%;padding:10px;border
 </style></head><body><div id="app"><main class="center"><div class="card">Loading…</div></main></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-const BUILD='20261012202605';
+const BUILD='20261012203525';
 async function checkVer(){try{const r=await fetch('version.txt?'+Date.now(),{cache:'no-store'});if(!r.ok)return;const v=(await r.text()).trim();
  if(v&&v!==BUILD&&sessionStorage.getItem('cc.app.reloaded')!==v){sessionStorage.setItem('cc.app.reloaded',v);const u=new URLSearchParams(location.search);u.set('v',v);location.replace(location.pathname+'?'+u.toString()+location.hash)}}catch(e){}}
 checkVer();document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')checkVer()});
@@ -203,7 +203,9 @@ function setupView(){return `<h1>Setup</h1><div class="card"><h2>Certs</h2>${D.c
  <label style="margin-top:10px">New cert<input id="nc" placeholder="e.g. Climber / Rescue"></label><div class="row"><label>Valid for<input id="ncN" type="number" min="0" placeholder="—"></label><label>&nbsp;<select id="ncU"><option>years</option><option>months</option><option>days</option></select></label></div><button class="btn" onclick="certAdd()">Add cert</button></div>
  ${['types','custs'].map(k=>`<div class="card"><h2>${k==='types'?'Job types':'Customers'}</h2>${D[k].map(x=>`<div class="item" onclick="go('list',{k:'${k}',id:'${x.id}'})"><div class="grow"><div class="t">${esc(x.name)}</div><div class="sub">${x.certs.length} required cert${x.certs.length==1?'':'s'}</div></div>›</div>`).join('')}
  <div class="row"><input id="n_${k}" placeholder="New ${k==='types'?'job type':'customer'}" style="flex:2"><button class="btn" style="flex:1;height:44px" onclick="listAdd('${k}')">Add</button></div></div>`).join('')}
- ${isAdmin()?`<div class="card"><h2>Import from this phone</h2><p class="sub">Copies the certs, people, job types, customers and jobs saved in your old Cert Compliance app on this phone into ${esc(comp().name)}. Your old app isn't changed.</p><button class="btn sec" onclick="importPhone()">Import from this phone</button></div>`:''}`}
+ ${isAdmin()?`<div class="card" id="impCard"><h2>Import old data</h2><p class="sub">Bring in certs, people, job types, customers and jobs from the old Cert Compliance app. They'll be added to <b>${esc(comp().name)}</b>. Your old app isn't changed.</p>
+ <label class="btn" style="cursor:pointer">📄 Import from backup file<input type="file" accept=".json,application/json,text/plain,*/*" style="display:none" onchange="pickBackup(this)"></label><p class="sub" style="margin:6px 0 10px">In the old app tap Backup → Download backup, then pick that file (Files → Downloads).</p>
+ <button class="btn sec" onclick="importPhone()">Import from this phone</button>${impPreview()}</div>`:''}`}
 const TBL={types:'job_types',custs:'customers'};
 async function certAdd(){const n=$('#nc').value.trim();if(!n)return toast('Enter a cert name');if(D.certs.some(c=>c.name.toLowerCase()===n.toLowerCase()))return toast('That cert already exists');const v=parseInt($('#ncN').value);await q(sb.from('certs').insert({company_id:cid,name:n,valid_n:v>0?v:null,valid_u:$('#ncU').value}),'Cert added');await load();render()}
 async function certDel(id){if(!confirm('Delete this cert everywhere?'))return;await q(sb.from('certs').delete().eq('id',id),'Deleted');await load();render()}
@@ -217,17 +219,35 @@ async function listSet(p){await q(sb.from(TBL[V.k]).update(p).eq('id',V.id),'Sav
 async function listTog(c,on){const x=cur(),r=on?[...new Set([...x.certs,c])]:x.certs.filter(i=>i!==c);await listSet({certs:r,one_of:x.one_of.filter(i=>r.includes(i))})}
 async function listOne(c,on){const x=cur();await listSet({one_of:on?[...new Set([...x.one_of,c])]:x.one_of.filter(i=>i!==c)})}
 async function listDel(){if(!confirm('Delete?'))return;await q(sb.from(TBL[V.k]).delete().eq('id',V.id),'Deleted');await load();go('setup')}
-async function importPhone(){let raw=localStorage.getItem('certCompliance.simple.v1')||localStorage.getItem('certCompliance.v1');if(!raw)return toast('No saved data from the old app found on this phone');
- let S;try{S=JSON.parse(raw)}catch(e){return toast('Old data could not be read')}
- if(!confirm(`Import ${(S.certs||[]).length} certs, ${(S.employees||[]).length} people and ${(S.jobs||[]).length} jobs into ${comp().name}?`))return;
- const cm={},pm={};const nm=x=>typeof x==='string'?x:(x&&x.name)||'';
- for(const c of S.certs||[]){const ex=D.certs.find(d=>d.name.toLowerCase()===String(c.name).toLowerCase());cm[c.id]=ex?ex.id:(await q(sb.from('certs').insert({company_id:cid,name:c.name,valid_n:c.validN||null,valid_u:c.validU||'years'}).select()))[0].id}
- const ids=a=>(a||[]).map(i=>cm[i]).filter(Boolean);
- for(const [k,arr] of [['types',S.jobTypes],['custs',S.customers]])for(const x of arr||[]){const n=nm(x);if(!n||D[k].some(d=>d.name===n))continue;const r=ids(x.certs);await q(sb.from(TBL[k]).insert({company_id:cid,name:n,certs:r,one_of:ids(x.oneOf).filter(i=>r.includes(i))}))}
- for(const e of S.employees||[]){const [p]=await q(sb.from('people').insert({company_id:cid,name:e.name}).select());pm[e.id]=p.id;const rows=Object.entries(e.certs||{}).filter(([k])=>cm[k]).map(([k,h])=>({company_id:cid,person_id:p.id,cert_id:cm[k],acquired:h.acquired||null,expires:h.expiry||null}));if(rows.length)await q(sb.from('person_certs').insert(rows))}
- for(const j of S.jobs||[]){const r=ids(j.required);await q(sb.from('jobs').insert({company_id:cid,site:j.site||'',type:j.name||'',customer:j.customer||'',required:r,one_of:ids(j.oneOf).filter(i=>r.includes(i)),crew:(j.crew||[]).map(i=>pm[i]).filter(Boolean)}))}
- toast('Import complete');await load();go('jobs')}
-
+function normBackup(S){if(!S||typeof S!=='object'||!Array.isArray(S.certs)||!Array.isArray(S.employees)||!Array.isArray(S.jobs))return null;
+ const nm=x=>(typeof x==='string'?x:(x&&x.name)||'').trim(),B=S.bundles||[],certIds=new Set(S.certs.map(c=>c.id));
+ const fromB=bs=>{const c=new Set(),o=new Set();bs.filter(Boolean).forEach(b=>{(b.certs||[]).forEach(i=>c.add(i));(b.oneOf||[]).forEach(i=>o.add(i))});return[[...c],[...o]]};
+ const list=(arr,isCust)=>{const out=[];(arr||[]).forEach(x=>{const n=nm(x);if(!n||out.some(y=>y.name.toLowerCase()===n.toLowerCase()))return;let c=x&&x.certs,o=x&&x.oneOf;
+  if(!Array.isArray(c)){const bs=isCust?((x&&x.bundles)||[]).map(id=>B.find(b=>b.id===id)):[B.find(b=>b.name&&b.name.toLowerCase()===n.toLowerCase())];[c,o]=fromB(bs)}
+  c=c.filter(i=>certIds.has(i));out.push({name:n,certs:c,oneOf:(o||[]).filter(i=>c.includes(i))})});return out};
+ const types=list([...(S.jobTypes||[]),...S.jobs.map(j=>j.name)],false),custs=list([...(S.customers||[]),...S.jobs.map(j=>j.customer)],true);
+ return{certs:S.certs.filter(c=>c&&c.name),employees:S.employees.filter(e=>e&&e.name),jobs:S.jobs.map(j=>({site:(j.site||'').trim(),type:(j.name||'').trim(),customer:(j.customer||'').trim(),required:j.required||[],oneOf:j.oneOf||[],crew:j.crew||[]})),types,custs}}
+async function importPhone(){const raw=localStorage.getItem('certCompliance.simple.v1')||localStorage.getItem('certCompliance.v1');if(!raw)return toast('No saved data found here. On iPhone, use “Import from backup file” instead.');
+ let S;try{S=normBackup(JSON.parse(raw))}catch(e){}if(!S)return toast('Old data could not be read');V.imp=S;V.impName='Data saved on this phone';render()}
+async function pickBackup(inp){const f=inp.files[0];inp.value='';if(!f)return;let S=null;try{S=normBackup(JSON.parse(await f.text()))}catch(e){}
+ if(!S){V.imp=null;V.impErr=`“${f.name}” isn't a Cert Compliance backup file. In the old app, go to Backup → Download backup, then pick that file here.`;return render()}
+ V.impErr='';V.imp=S;V.impName=f.name;render()}
+function impPreview(){const S=V.imp;if(!S)return V.impErr?`<div class="note" style="background:#fee2e2;color:#991b1b">${esc(V.impErr)}</div>`:'';
+ return `<div class="note" style="background:#dbeafe;color:#1e3a8a"><b>${esc(V.impName)}</b><br>${S.certs.length} certs · ${S.employees.length} people · ${S.jobs.length} jobs · ${S.types.length} job types · ${S.custs.length} customers<br>Will be added to <b>${esc(comp().name)}</b>. Anything that already exists (same name) is skipped, so importing twice is safe.</div>
+ <button class="btn" id="impGo" onclick="runImport()">Import into ${esc(comp().name)}</button><button class="btn sec" style="margin-top:8px" onclick="V.imp=null;render()">Cancel</button>`}
+async function runImport(){const S=V.imp;if(!S)return;const btn=$('#impGo');if(btn){btn.disabled=true;btn.textContent='Importing…'}
+ try{const L=s=>String(s||'').trim().toLowerCase(),cm={},pm={};let add={certs:0,people:0,jobs:0,lists:0};
+ for(const c of S.certs){const ex=D.certs.find(d=>L(d.name)===L(c.name));if(ex)cm[c.id]=ex.id;else{const [n]=await q(sb.from('certs').insert({company_id:cid,name:c.name.trim(),valid_n:c.validN||null,valid_u:c.validU||'years'}).select());cm[c.id]=n.id;D.certs.push(n);add.certs++}}
+ const ids=a=>[...new Set((a||[]).map(i=>cm[i]).filter(Boolean))];
+ for(const [k,arr] of [['types',S.types],['custs',S.custs]])for(const x of arr){if(D[k].some(d=>L(d.name)===L(x.name)))continue;const r=ids(x.certs);const [n]=await q(sb.from(TBL[k]).insert({company_id:cid,name:x.name,certs:r,one_of:ids(x.oneOf).filter(i=>r.includes(i))}).select());D[k].push(n);add.lists++}
+ for(const e of S.employees){let p=D.people.find(d=>L(d.name)===L(e.name));if(!p){[p]=await q(sb.from('people').insert({company_id:cid,name:e.name.trim()}).select());D.people.push(p);add.people++}pm[e.id]=p.id;
+  const have=new Set(D.pcs.filter(x=>x.person_id===p.id).map(x=>x.cert_id));const rows=Object.entries(e.certs||{}).filter(([k])=>cm[k]&&!have.has(cm[k])).map(([k,h])=>({company_id:cid,person_id:p.id,cert_id:cm[k],acquired:(h&&h.acquired)||null,expires:(h&&(h.expiry||h.expires))||null}));
+  const uniq=[...new Map(rows.map(r=>[r.cert_id,r])).values()];if(uniq.length){const n=await q(sb.from('person_certs').insert(uniq).select());D.pcs.push(...n)}}
+ const busy=new Set(D.jobs.flatMap(j=>j.crew));
+ for(const j of S.jobs){if(D.jobs.some(d=>L(d.site)===L(j.site)&&L(d.type)===L(j.type)&&L(d.customer)===L(j.customer)))continue;const r=ids(j.required),crew=[...new Set(j.crew.map(i=>pm[i]).filter(i=>i&&!busy.has(i)))];crew.forEach(i=>busy.add(i));
+  const [n]=await q(sb.from('jobs').insert({company_id:cid,site:j.site,type:j.type,customer:j.customer,required:r,one_of:ids(j.oneOf).filter(i=>r.includes(i)),crew}).select());D.jobs.push(n);add.jobs++}
+ V.imp=null;await load();toast(`Imported ${add.certs} certs, ${add.people} people, ${add.jobs} jobs, ${add.lists} types/customers`);go('jobs')}
+ catch(e){if(btn){btn.disabled=false;btn.textContent='Try again'}}}
 /* ---------- admin ---------- */
 async function shareLink(e){const url=link(e);if(navigator.share){try{await navigator.share({title:'Join Cert Compliance',text:"You're invited to Cert Compliance. Tap to create your account:",url});return}catch(x){if(x.name==='AbortError')return}}copyLink(e)}
 function invRows(list){return list.map(i=>`<div style="padding:10px 0;border-bottom:1px solid var(--line)"><div class="t">${esc(i.name||i.email)}</div><div class="sub">${esc(i.email)} · ${cap(i.role)}</div>
