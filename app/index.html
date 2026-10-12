@@ -1,0 +1,272 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Cert Compliance</title><meta name="apple-mobile-web-app-capable" content="yes"><meta name="theme-color" content="#1e293b"><meta name="apple-mobile-web-app-title" content="Cert Compliance"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><link rel="apple-touch-icon" href="icon-180.png"><link rel="icon" href="icon-192.png"><link rel="manifest" href="manifest.json">
+<style>
+:root{--bg:#f3f5f9;--ink:#0f172a;--ink2:#475569;--mute:#64748b;--line:#e5e9f0;--pri:#2563eb;--dark:#1e293b;--gbg:#dcfce7;--rbg:#fee2e2;--abg:#fef3c7}
+*{box-sizing:border-box}body{margin:0;font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--ink);padding-bottom:90px}
+header{background:var(--dark);color:#fff;padding:12px 16px;padding-top:max(12px,env(safe-area-inset-top));display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:5}
+.logo{font-weight:700;font-size:17px;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.logo small{display:block;font-weight:500;font-size:12px;color:#94a3b8}
+.av{width:32px;height:32px;border-radius:50%;background:#334155;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;border:0;color:#fff;cursor:pointer}
+main{padding:14px;max-width:640px;margin:0 auto}.card{background:#fff;border-radius:12px;box-shadow:0 1px 2px #0f172a0d,0 1px 8px #0f172a08;padding:16px;margin-bottom:14px}
+h1{font-size:24px;margin:2px 0 4px}h2{font-size:16px;margin:0 0 10px}.sub{color:var(--mute);font-size:13px}
+.item{display:flex;align-items:center;gap:10px;padding:11px 2px;border-bottom:1px solid var(--line);cursor:pointer}.item:last-child{border:0}.t{font-weight:600}.grow{flex:1;min-width:0}
+.pill{display:inline-flex;padding:3px 10px;border-radius:999px;font-size:12px;font-weight:700;white-space:nowrap}.g{background:var(--gbg);color:#166534}.r{background:var(--rbg);color:#991b1b}.a{background:var(--abg);color:#92400e}.n{background:#eef2f7;color:var(--ink2)}.b{background:#dbeafe;color:#1e40af}
+.btn{font:inherit;font-size:15px;font-weight:600;padding:11px 14px;border:0;border-radius:8px;background:var(--pri);color:#fff;display:flex;justify-content:center;width:100%;cursor:pointer;margin-top:4px}.btn.sec{background:#e8edf4;color:var(--ink)}.btn.red{background:#fee2e2;color:#991b1b}.btn:disabled{opacity:.5}
+.lnk{background:none;border:0;color:var(--pri);font:inherit;font-weight:600;padding:6px 0;cursor:pointer}
+input,select,textarea{font:inherit;font-size:16px;width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:8px;margin:4px 0 12px;background:#fff;color:var(--ink)}label{font-size:13px;font-weight:600;color:var(--ink2);display:block}
+.row{display:flex;gap:8px}.row>*{flex:1}
+.chip{font-size:11px;font-weight:700;padding:3px 8px;border-radius:999px;background:#eef2f7;color:var(--ink2);white-space:nowrap}.chip.fm{background:#1e293b;color:#fff}
+.note{background:#eef2f7;border-radius:10px;padding:10px 12px;font-size:13px;color:var(--ink2);margin:8px 0}
+.bt{position:fixed;bottom:0;left:0;right:0;display:flex;background:#fff;border-top:1px solid var(--line);padding:8px 4px max(14px,env(safe-area-inset-bottom));z-index:5}.bt button{flex:1;text-align:center;font:inherit;font-size:12px;font-weight:600;color:var(--mute);background:none;border:0;cursor:pointer}.bt i{display:block;font-style:normal;font-size:20px}.bt .on{color:var(--pri)}
+.cb{display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}.cb:last-child{border:0}.cb input[type=checkbox]{width:22px;height:22px;margin:2px 0 0;flex:none}
+.dates{display:flex;gap:8px;margin-top:6px}.dates label{flex:1;font-size:11px}.dates input{margin:2px 0 0;padding:7px;font-size:15px}
+.gap{color:#991b1b;font-size:14px;margin:4px 0}.ok{color:#166534;font-size:14px;margin:4px 0}
+.sug{border:1px solid var(--line);border-radius:10px;max-height:46vh;overflow:auto;margin-top:-6px}.sug .h{font-size:11px;font-weight:800;color:var(--mute);text-transform:uppercase;padding:8px 10px 2px;background:#f8fafc}.sug .item{padding:9px 10px}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:96px;background:#0f172a;color:#fff;padding:10px 16px;border-radius:10px;font-size:14px;z-index:9;max-width:90%}
+.big{font-size:30px;font-weight:800}.sw{appearance:none;width:46px;height:28px;border-radius:999px;background:#cbd5e1;position:relative;margin:0;flex:none;padding:0;border:0;cursor:pointer}.sw:checked{background:#16a34a}.sw:after{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;transition:.15s}.sw:checked:after{left:21px}
+.center{max-width:420px;margin:40px auto}.err{color:#991b1b;font-size:14px;min-height:20px}
+.back{background:none;border:0;color:var(--pri);font:inherit;font-weight:600;padding:0 0 8px;cursor:pointer}
+.photo{max-width:100%;border-radius:8px;margin-top:6px}
+</style></head><body><div id="app"><main class="center"><div class="card">Loading…</div></main></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const SB_URL='https://ajsxfuguasqppuupepib.supabase.co',SB_ANON='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFqc3hmdWd1YXNxcHB1dXBlcGliIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE4Mjk4NDksImV4cCI6MjEwNzQwNTg0OX0.ARn8MVRF4rb2eUnLI81rbZzFk_oDAABBH6CH8i0rB4I';
+const POS=['Foreman','Top Hand','Tower Tech III','Tower Tech IV','CM','PM'];
+const sb=supabase.createClient(SB_URL,SB_ANON);
+let sess=null,me=null,owner=false,companies=[],cid=null,D=null,V={tab:'jobs'},blocked=false,authMode='in',chan=null,crew=[],SOON=30;
+const $=s=>document.querySelector(s),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const today=()=>new Date().toISOString().slice(0,10);
+const fmt=d=>d?new Date(d+'T12:00').toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'}):'';
+function toast(m){const t=document.createElement('div');t.className='toast';t.textContent=m;document.body.appendChild(t);setTimeout(()=>t.remove(),2600)}
+async function q(p,msg){const {data,error}=await p;if(error){toast(error.message.replace(/^.*?: /,'')||'Error');throw error}if(msg)toast(msg);return data}
+const params=new URLSearchParams(location.search);
+
+/* ---------- auth ---------- */
+async function boot(){const {data}=await sb.auth.getSession();sess=data.session;
+ sb.auth.onAuthStateChange((ev,s)=>{if(ev==='PASSWORD_RECOVERY'){V={tab:'reset'};sess=s;return render()}if(ev==='SIGNED_OUT'){sess=null;me=null;D=null;render()}});
+ if(location.hash.includes('type=recovery')){V={tab:'reset'};return render()}
+ if(params.get('invite')&&!sess)authMode='up';
+ sess?await start():render()}
+async function start(){me=(await q(sb.from('profiles').select('*').eq('id',sess.user.id)))[0];
+ owner=(await q(sb.from('owners').select('user_id'))).length>0;
+ blocked=false;
+ if(owner){companies=await q(sb.from('companies').select('*').order('name'));cid=localStorage.getItem('cc.app.ownerCid');if(!companies.some(c=>c.id===cid))cid=null;V={tab:cid?'jobs':'owner'}}
+ else if(me){const c=await q(sb.from('companies').select('*'));if(!c.length){blocked=true;return render()}companies=c;cid=me.company_id;V={tab:me.role==='tech'?'mine':'jobs'}}
+ else{blocked=true;return render()}
+ if(cid)await load();render();live()}
+async function signIn(){const e=$('#em').value.trim(),p=$('#pw').value;$('#err').textContent='';
+ const {data,error}=await sb.auth.signInWithPassword({email:e,password:p});if(error)return $('#err').textContent=error.message;sess=data.session;start()}
+async function signUp(){const e=$('#em').value.trim(),p=$('#pw').value;$('#err').textContent='';if(p.length<8)return $('#err').textContent='Password must be at least 8 characters';
+ const {data,error}=await sb.auth.signUp({email:e,password:p,options:{emailRedirectTo:location.origin+location.pathname}});
+ if(error)return $('#err').textContent=/database error/i.test(error.message)?'This email has not been invited yet. Ask your Admin to invite you.':error.message;
+ if(!data.session)return $('#err').textContent='Check your email to confirm, then sign in.';sess=data.session;history.replaceState(null,'',location.pathname);start()}
+async function forgot(){const e=$('#em').value.trim();if(!e)return $('#err').textContent='Enter your email first';
+ const {error}=await sb.auth.resetPasswordForEmail(e,{redirectTo:location.origin+location.pathname});$('#err').textContent=error?error.message:'If that email has an account, a reset link is on its way.'}
+async function setNewPw(){const p=$('#pw').value;if(p.length<8)return $('#err').textContent='At least 8 characters';await q(sb.auth.updateUser({password:p}),'Password updated');history.replaceState(null,'',location.pathname);start()}
+async function signOut(){if(chan)sb.removeChannel(chan);await sb.auth.signOut();sess=null;me=null;D=null;render()}
+function authView(){if(V.tab==='reset')return `<main class="center"><div class="card"><h1>New password</h1><label>New password<input id="pw" type="password" autocomplete="new-password"></label><div id="err" class="err"></div><button class="btn" onclick="setNewPw()">Save password</button></div></main>`;
+ const up=authMode==='up',inv=params.get('invite')||'';
+ return `<main class="center"><div style="text-align:center;margin-bottom:18px"><div style="font-size:40px">🗼</div><h1>Cert Compliance</h1><div class="sub">${up?'Create your account — use the email you were invited with':'Sign in to your crew dashboard'}</div></div>
+ <div class="card"><label>Email<input id="em" type="email" autocomplete="email" value="${esc(inv)}"></label><label>Password<input id="pw" type="password" autocomplete="${up?'new-password':'current-password'}" onkeydown="if(event.key==='Enter')${up?'signUp':'signIn'}()"></label>
+ <div id="err" class="err"></div><button class="btn" onclick="${up?'signUp':'signIn'}()">${up?'Create account':'Sign in'}</button>
+ <div class="row" style="margin-top:8px"><button class="lnk" style="text-align:left" onclick="authMode='${up?'in':'up'}';render()">${up?'Have an account? Sign in':'First time? Create account'}</button>${up?'':'<button class="lnk" style="text-align:right" onclick="forgot()">Forgot password?</button>'}</div></div>
+ <p class="sub" style="text-align:center">Accounts are invite-only. Your company Admin sends your invite.</p></main>`}
+
+/* ---------- data ---------- */
+async function load(){const f=t=>sb.from(t).select('*').eq('company_id',cid);const role=myRole();
+ const [certs,types,custs,people,pcs,jobs]=await Promise.all(['certs','job_types','customers','people','person_certs','jobs'].map(t=>q(f(t))));
+ D={certs:certs.sort((a,b)=>a.name.localeCompare(b.name)),types,custs,people:people.sort((a,b)=>a.name.localeCompare(b.name)),pcs,jobs:jobs.sort((a,b)=>(a.site||'').localeCompare(b.site||'')),profiles:[],invites:[],audit:[]};
+ if(role==='admin'||role==='scheduler'){D.profiles=await q(sb.from('profiles').select('*').eq('company_id',cid));D.audit=await q(sb.from('audit_log').select('*').eq('company_id',cid).order('at',{ascending:false}).limit(200))}
+ if(role==='admin')D.invites=await q(sb.from('pending_invites').select('*').eq('company_id',cid));
+ if(role==='tech'){crew=(await q(sb.rpc('my_crew')))||[]}}
+let lt=null;function live(){if(chan)sb.removeChannel(chan);chan=sb.channel('cc').on('postgres_changes',{event:'*',schema:'public'},()=>{clearTimeout(lt);lt=setTimeout(refresh,400)}).subscribe()}
+async function refresh(){if(!sess)return;const busy=document.activeElement&&/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName);if(busy){clearTimeout(lt);lt=setTimeout(refresh,1500);return}
+ if(owner)companies=await q(sb.from('companies').select('*').order('name'));else{const c=await q(sb.from('companies').select('*'));if(!c.length){blocked=true;return render()}}
+ if(cid)await load();render()}
+const myRole=()=>owner?'admin':me&&me.role;const canEdit=()=>['admin','scheduler'].includes(myRole());const isAdmin=()=>myRole()==='admin';
+const cert=id=>D.certs.find(c=>c.id===id),person=id=>D.people.find(p=>p.id===id),job=id=>D.jobs.find(j=>j.id===id);
+const comp=()=>companies.find(c=>c.id===cid)||{};
+
+/* ---------- compliance (same rules as Simple) ---------- */
+const pc=(pid,cid_)=>D.pcs.find(x=>x.person_id===pid&&x.cert_id===cid_);
+function status(pid,c){const h=pc(pid,c);if(!h)return'no';if(!h.expires)return'ok';const d=(new Date(h.expires+'T12:00')-new Date())/864e5;return d<0?'expired':d<=SOON?'soon':'ok'}
+const bad=s=>s==='no'||s==='expired';const isOne=(j,c)=>j.one_of.includes(c);
+const holders=(j,c)=>j.crew.map(person).filter(Boolean).filter(p=>!bad(status(p.id,c)));
+const gaps=j=>{const o=[];j.crew.map(person).filter(Boolean).forEach(p=>j.required.forEach(c=>{if(!isOne(j,c)&&bad(status(p.id,c))&&cert(c))o.push([p,cert(c),status(p.id,c)])}));return o};
+const teamGaps=j=>j.required.filter(c=>isOne(j,c)&&cert(c)&&!holders(j,c).length).map(cert);
+const jobBad=j=>j.crew.length<2||gaps(j).length>0||teamGaps(j).length>0;
+function jpill(j){if(!j.crew.length)return'<span class="pill r">No crew</span>';if(j.crew.length<2)return'<span class="pill r">Needs 2+ crew</span>';const t=teamGaps(j);if(t.length)return`<span class="pill r">Needs ${esc(t[0].name)}</span>`;const g=gaps(j);if(g.length)return`<span class="pill r">${esc(g[0][0].name.split(' ')[0])} missing cert</span>`;if(!j.required.length)return'<span class="pill n">No certs set</span>';return'<span class="pill g">Compliant</span>'}
+const jobOf=pid=>D.jobs.find(j=>j.crew.includes(pid));
+function personPill(p,j){if(!j)return'';const b=j.required.filter(c=>!isOne(j,c)&&bad(status(p.id,c))&&cert(c));if(b.length)return`<span class="pill r">Missing ${esc(cert(b[0]).name)}${b.length>1?' +'+(b.length-1):''}</span>`;if(j.required.some(c=>!isOne(j,c)&&status(p.id,c)==='soon'))return'<span class="pill a">Expiring soon</span>';return'<span class="pill g">Ready</span>'}
+function personSum(p){const mine=D.pcs.filter(x=>x.person_id===p.id),e=mine.filter(x=>status(p.id,x.cert_id)==='expired').length,s=mine.filter(x=>status(p.id,x.cert_id)==='soon').length;
+ return e?`<span class="pill r">${e} expired</span>`:s?`<span class="pill a">${s} expiring</span>`:`<span class="pill n">${mine.length} cert${mine.length==1?'':'s'}</span>`}
+const posChip=p=>p?`<span class="chip ${p==='Foreman'?'fm':''}">${esc(p)}</span>`:'';
+const crewSort=a=>a.slice().sort((x,y)=>(x.position==='Foreman'?0:1)-(y.position==='Foreman'?0:1)||x.name.localeCompare(y.name));
+
+/* ---------- shell ---------- */
+function go(tab,extra){V=Object.assign({tab},extra||{});render();scrollTo(0,0)}
+function render(){const a=$('#app');if(!sess)return a.innerHTML=authView();
+ if(blocked)return a.innerHTML=`<main class="center"><div class="card" style="text-align:center"><div style="font-size:40px">⏸️</div><h1>Access paused</h1><p class="sub">Your company's access to Cert Compliance is turned off right now. Your data is safe. Please contact your company Admin.</p><button class="btn sec" onclick="signOut()">Sign out</button></div></main>`;
+ if(V.tab==='reset')return a.innerHTML=authView();
+ const role=myRole(),c=comp();let tabs=[];
+ if(owner&&!cid)tabs=[['owner','🏢','Companies']];
+ else if(role==='tech')tabs=[['mine','👷','My job'],['mycerts','🪪','My certs']];
+ else{tabs=[['jobs','🗼','Jobs'],['people','👥','People'],['setup','⚙️','Setup']];if(role==='admin')tabs.push(['admin','🔑','Admin'])}
+ if(owner&&cid)tabs.push(['owner','🏢','Owner']);
+ const views={owner:ownerView,company:companyView,invco:inviteCoView,jobs:jobsView,job:jobView,newjob:newJobView,people:peopleView,person:personView,setup:setupView,list:listView,admin:adminView,mine:mineView,mycerts:myCertsView,account:accountView};
+ const top=V.tab.startsWith('own')||['company','invco'].includes(V.tab)||(owner&&!cid)?'owner':({job:'jobs',newjob:'jobs',person:'people',list:'setup'}[V.tab]||V.tab);
+ a.innerHTML=`<header><div class="logo">${owner&&!cid?'Owner dashboard':esc(c.name||'Cert Compliance')}<small>${owner?'Platform owner'+(cid?' · viewing as Admin':''):esc(cap(role))+(me&&me.position?' · '+esc(me.position):'')}</small></div><button class="av" onclick="go('account')" aria-label="Account">${esc(ini((me&&me.name)||sess.user.email))}</button></header>
+ <main>${(views[V.tab]||jobsView)()}</main>${tabs.length>1?`<nav class="bt">${tabs.map(t=>`<button class="${top===t[0]?'on':''}" onclick="${t[0]==='owner'?'ownerHome()':`go('${t[0]}')`}"><i>${t[1]}</i>${t[2]}</button>`).join('')}</nav>`:''}`}
+const cap=s=>s?s[0].toUpperCase()+s.slice(1):'';const ini=s=>String(s).split(/[\s@.]+/).filter(Boolean).slice(0,2).map(x=>x[0].toUpperCase()).join('');
+function accountView(){return `<div class="card"><h2>Account</h2><div class="t">${esc(me&&me.name||'')}</div><div class="sub">${esc(sess.user.email)}</div><div class="sub">${owner?'Platform owner':esc(cap(me.role))}${me&&me.position?' · '+esc(me.position):''}</div>
+ <label style="margin-top:12px">Your name<input id="myname" value="${esc(me&&me.name||'')}"></label>${owner||isAdmin()?'<button class="btn sec" onclick="saveMyName()">Save name</button>':''}
+ <button class="btn sec" onclick="sb.auth.resetPasswordForEmail(sess.user.email,{redirectTo:location.origin+location.pathname}).then(()=>toast('Reset link emailed'))">Email me a password reset link</button><button class="btn red" style="margin-top:10px" onclick="signOut()">Sign out</button></div>`}
+async function saveMyName(){await q(sb.from('profiles').update({name:$('#myname').value.trim()}).eq('id',sess.user.id),'Saved');me.name=$('#myname').value.trim();render()}
+
+/* ---------- jobs ---------- */
+function jobsView(){const s=(V.q||'').toLowerCase(),list=D.jobs.filter(j=>!s||[j.site,j.type,j.customer].join(' ').toLowerCase().includes(s)),nc=D.jobs.filter(jobBad).length;
+ return `<div class="row" style="align-items:center"><h1>Jobs</h1><span style="flex:none">${nc?`<span class="pill r">${nc} need attention</span>`:D.jobs.length?'<span class="pill g">All compliant</span>':''}</span></div>
+ <button class="btn" onclick="go('newjob')">＋ New job</button><input placeholder="Search jobs…" value="${esc(V.q||'')}" oninput="V.q=this.value;const p=this.selectionStart;render();const i=$('main input');i.focus();i.setSelectionRange(p,p)">
+ <div class="card" style="padding:4px 14px">${list.map(j=>`<div class="item" onclick="go('job',{id:'${j.id}'})"><div class="grow"><div class="t" style="font-size:17px">${esc(j.site||j.type||'Untitled job')}</div><div class="sub">${esc([j.site?j.type:'',j.customer].filter(Boolean).join(' · '))} · ${j.crew.length} crew</div></div>${jpill(j)}</div>`).join('')||'<p class="sub">No jobs yet. Tap “New job”.</p>'}</div>`}
+function newJobView(){const o=(arr,ph)=>`<option value="">${ph}</option>`+arr.map(x=>`<option>${esc(x.name)}</option>`).join('');
+ return `<button class="back" onclick="go('jobs')">‹ Jobs</button><div class="card"><h2>New job</h2><label>Site<input id="js" placeholder="Site ID, e.g. A1N0001"></label><label>Job type<select id="jt" onchange="prevNew()">${o(D.types,'Choose a job type')}</select></label><label>Customer<select id="jcu" onchange="prevNew()">${o(D.custs,'No customer')}</select></label><div id="prev"></div><button class="btn" onclick="addJob()">Create job</button></div>`}
+function reqFrom(t,c){const r=new Set(),o=new Set();[D.types.find(x=>x.name===t),D.custs.find(x=>x.name===c)].filter(Boolean).forEach(x=>{x.certs.forEach(i=>r.add(i));x.one_of.forEach(i=>o.add(i))});return{required:[...r].filter(cert),one_of:[...o].filter(i=>r.has(i))}}
+function prevNew(){const r=reqFrom($('#jt').value,$('#jcu').value);$('#prev').innerHTML=r.required.length?`<div class="note"><b>Required certs:</b> ${r.required.map(i=>esc(cert(i).name)+(r.one_of.includes(i)?' (1+)':'')).join(', ')}</div>`:''}
+async function addJob(){const t=$('#jt').value,c=$('#jcu').value,s=$('#js').value.trim();if(!s&&!t)return toast('Enter a site or job type');const r=reqFrom(t,c);
+ const [j]=await q(sb.from('jobs').insert({company_id:cid,site:s,type:t,customer:c,...r}).select(),'Job created — now add crew');await load();go('job',{id:j.id});setTimeout(()=>{const i=$('#crewIn');if(i)i.focus()},100)}
+function jobView(){const j=job(V.id);if(!j)return jobsView();const ed=canEdit(),g=gaps(j),t=teamGaps(j),cr=crewSort(j.crew.map(person).filter(Boolean));
+ const hist=D.audit.filter(a=>a.row_id===j.id).slice(0,5);
+ const lines=[];if(j.crew.length<2)lines.push(`Needs at least 2 crew (has ${j.crew.length})`);t.forEach(c=>lines.push(`Nobody on the crew holds ${esc(c.name)} (need 1+)`));g.forEach(([p,c,s])=>lines.push(`${esc(p.name)} — ${esc(c.name)} ${s==='expired'?'expired':'missing'}`));
+ return `<button class="back" onclick="go('jobs')">‹ Jobs</button><div class="card"><div class="big">${esc(j.site||j.type||'Untitled')}</div><div class="sub" style="font-size:15px">${esc([j.site?j.type:'',j.customer].filter(Boolean).join(' · '))}</div><div style="margin:10px 0">${jpill(j)}</div>
+ ${lines.map(l=>`<div class="gap">✘ ${l}</div>`).join('')}${!jobBad(j)&&j.required.length?'<div class="ok">✔ All crew members hold required certs.</div>':''}
+ <div class="sub" style="margin-top:8px">Last updated ${new Date(j.updated_at).toLocaleString()} by ${esc(j.updated_by||'')}</div></div>
+ <div class="card"><h2>Crew (${j.crew.length})</h2>${cr.map(p=>`<div class="item" style="cursor:default"><div class="grow"><div class="t">${esc(p.name)} ${posChip(p.position)}</div></div>${personPill(p,j)}${ed?`<button class="lnk" style="color:#991b1b;margin-left:6px" onclick="crewDel('${j.id}','${p.id}')">✕</button>`:''}</div>`).join('')||'<p class="sub">No crew yet.</p>'}
+ ${ed?`<label style="margin-top:10px">Add crew<input id="crewIn" autocomplete="off" placeholder="Type a name…" onfocus="sugShow('${j.id}');setTimeout(()=>this.scrollIntoView({block:'start',behavior:'smooth'}),300)" oninput="sugShow('${j.id}')"></label><div id="sug"></div>`:''}</div>
+ <div class="card"><h2>Required certs</h2><p class="sub" style="margin-top:-6px">“1+” means only one person on the crew needs it.</p>${D.certs.map(c=>{const on=j.required.includes(c.id),one=isOne(j,c.id);return `<div class="cb"><input type="checkbox" ${on?'checked':''} ${ed?'':'disabled'} onchange="reqTog('${j.id}','${c.id}',this.checked)"><div class="grow">${esc(c.name)}</div>${on?`<label style="display:flex;gap:6px;align-items:center;margin:0"><input type="checkbox" style="width:18px;height:18px;margin:0" ${one?'checked':''} ${ed?'':'disabled'} onchange="oneTog('${j.id}','${c.id}',this.checked)">1+</label>`:''}</div>`}).join('')||'<p class="sub">Add certs in Setup first.</p>'}</div>
+ <div class="card"><h2>Details</h2><label>Site<input value="${esc(j.site)}" ${ed?'':'disabled'} onchange="jobSet('${j.id}',{site:this.value.trim()})"></label><label>Job type<select ${ed?'':'disabled'} onchange="jobSet('${j.id}',{type:this.value})"><option value=""></option>${D.types.map(x=>`<option ${x.name===j.type?'selected':''}>${esc(x.name)}</option>`).join('')}</select></label><label>Customer<select ${ed?'':'disabled'} onchange="jobSet('${j.id}',{customer:this.value})"><option value="">No customer</option>${D.custs.map(x=>`<option ${x.name===j.customer?'selected':''}>${esc(x.name)}</option>`).join('')}</select></label>
+ ${hist.length?`<h2 style="margin-top:6px">History</h2>${hist.map(h=>`<div class="sub">${new Date(h.at).toLocaleString()} — ${esc(h.user_name)} ${esc(h.action)}d</div>`).join('')}`:''}
+ ${ed?`<button class="btn red" style="margin-top:12px" onclick="jobDel('${j.id}')">Delete job</button>`:''}</div>`}
+async function jobSet(id,patch){await q(sb.from('jobs').update(patch).eq('id',id),'Saved');await load();render()}
+async function reqTog(id,c,on){const j=job(id);const r=on?[...new Set([...j.required,c])]:j.required.filter(x=>x!==c);await jobSet(id,{required:r,one_of:j.one_of.filter(x=>r.includes(x))})}
+async function oneTog(id,c,on){const j=job(id);await jobSet(id,{one_of:on?[...new Set([...j.one_of,c])]:j.one_of.filter(x=>x!==c)})}
+async function jobDel(id){if(!confirm('Delete this job?'))return;await q(sb.from('jobs').delete().eq('id',id),'Job deleted');await load();go('jobs')}
+async function crewDel(id,pid){await jobSet(id,{crew:job(id).crew.filter(x=>x!==pid)})}
+function fit(j,p){return j.required.filter(c=>isOne(j,c)&&!holders(j,c).length&&!bad(status(p.id,c))).length>0}
+function sugShow(id){const j=job(id),s=($('#crewIn').value||'').toLowerCase(),c=D.people.filter(p=>!j.crew.includes(p.id)&&p.name.toLowerCase().includes(s));
+ const G={r:[],m:[],o:[]};c.forEach(p=>{const oj=jobOf(p.id);if(oj)G.o.push([p,oj]);else if(j.required.some(x=>!isOne(j,x)&&bad(status(p.id,x))))G.m.push([p]);else G.r.push([p])});
+ const row=([p,oj])=>`<div class="item" onclick="crewAdd('${id}','${p.id}')"><div class="grow"><div class="t">${esc(p.name)} ${posChip(p.position)} ${!oj&&fit(j,p)?'<span class="pill b">Best fit</span>':''}</div>${oj?`<div class="sub">On ${esc(oj.site||oj.type)} — tap to move here</div>`:''}</div>${oj?'<span class="pill n">Busy</span>':personPill(p,j)}</div>`;
+ G.r.sort((a,b)=>fit(j,b[0])-fit(j,a[0]));
+ $('#sug').innerHTML=c.length?`<div class="sug">${G.r.length?'<div class="h">Ready</div>'+G.r.map(row).join(''):''}${G.m.length?'<div class="h">Missing certs</div>'+G.m.map(row).join(''):''}${G.o.length?'<div class="h">On another job</div>'+G.o.map(row).join(''):''}</div>`:'<p class="sub">No matches. Add people on the People tab.</p>'}
+async function crewAdd(id,pid){const oj=jobOf(pid);if(oj&&oj.id!==id){if(!confirm(`${person(pid).name} is on ${oj.site||oj.type}. Move them here?`))return;await q(sb.from('jobs').update({crew:oj.crew.filter(x=>x!==pid)}).eq('id',oj.id))}
+ await jobSet(id,{crew:[...job(id).crew,pid]});const i=$('#crewIn');if(i){i.focus();sugShow(id)}}
+
+/* ---------- people ---------- */
+function peopleView(){const s=(V.q||'').toLowerCase(),l=D.people.filter(p=>p.name.toLowerCase().includes(s));
+ return `<h1>People</h1><div class="row"><input id="np" placeholder="New person's name" style="flex:2"><button class="btn" style="flex:1;margin-top:4px;height:44px" onclick="addPerson()">Add</button></div>
+ <input placeholder="Search people…" value="${esc(V.q||'')}" oninput="V.q=this.value;const p=this.selectionStart;render();const i=document.querySelectorAll('main input')[1];i.focus();i.setSelectionRange(p,p)">
+ <div class="card" style="padding:4px 14px">${l.map(p=>{const j=jobOf(p.id);return `<div class="item" onclick="go('person',{id:'${p.id}'})"><div class="grow"><div class="t">${esc(p.name)} ${posChip(p.position)}</div><div class="sub">${j?'On '+esc(j.site||j.type):'Available'}${p.user_id?' · has login':''}</div></div>${personSum(p)}</div>`}).join('')||'<p class="sub">No people yet.</p>'}</div>`}
+async function addPerson(){const n=$('#np').value.trim();if(!n)return toast('Enter a name');const [p]=await q(sb.from('people').insert({company_id:cid,name:n}).select(),'Added — now tick their certs');await load();go('person',{id:p.id})}
+function certRows(pid,ed,techUpload){return D.certs.map(c=>{const h=pc(pid,c.id),s=h?status(pid,c.id):'';
+ return `<div class="cb"><input type="checkbox" ${h?'checked':''} ${ed?'':'disabled'} onchange="pcTog('${pid}','${c.id}',this.checked)"><div class="grow"><div class="t">${esc(c.name)} ${s==='expired'?'<span class="pill r">Expired</span>':s==='soon'?'<span class="pill a">Expires soon</span>':h?'<span class="pill g">Current</span>':''}</div>
+ ${h?`<div class="dates"><label>Acquired<input type="date" value="${h.acquired||''}" ${ed?'':'disabled'} onchange="pcDate('${h.id}','acquired',this.value,'${c.id}')"></label><label>Expires${c.valid_n?` <span class="sub">(${c.valid_n} ${c.valid_u})</span>`:''}<input type="date" value="${h.expires||''}" ${ed?'':'disabled'} onchange="pcDate('${h.id}','expires',this.value)"></label></div>
+ ${ed||techUpload?`<label class="lnk" style="display:inline-block;cursor:pointer">📷 ${h.photo_path?'Replace photo':'Upload photo'}<input type="file" accept="image/*" style="display:none" onchange="upPhoto('${h.id}','${pid}',this.files[0])"></label>`:''}${h.photo_path?` <button class="lnk" onclick="viewPhoto('${h.photo_path}',this)">View photo</button>`:''}`:''}</div></div>`}).join('')||'<p class="sub">No certs set up yet (Setup tab).</p>'}
+function personView(){const p=person(V.id);if(!p)return peopleView();const ed=canEdit(),j=jobOf(p.id);
+ return `<button class="back" onclick="go('people')">‹ People</button><div class="card"><label>Name<input value="${esc(p.name)}" onchange="pSet('${p.id}',{name:this.value.trim()})"></label>
+ <label>Position ${isAdmin()?'':'<span class="sub">🔒 Only an Admin can change this</span>'}<select ${isAdmin()?'':'disabled'} onchange="pSet('${p.id}',{position:this.value||null})"><option value="">—</option>${POS.map(x=>`<option ${x===p.position?'selected':''}>${x}</option>`).join('')}</select></label>
+ <div class="sub">${j?`On job <b>${esc(j.site||j.type)}</b>`:'Not on a job'}${p.user_id?' · has a login':''}</div></div>
+ <div class="card"><h2>Certs</h2>${certRows(p.id,ed)}</div>${ed?`<button class="btn red" onclick="pDel('${p.id}')">Remove person</button>`:''}`}
+async function pSet(id,patch){await q(sb.from('people').update(patch).eq('id',id),'Saved');await load();render()}
+async function pDel(id){if(!confirm('Remove this person and their certs?'))return;for(const j of D.jobs.filter(j=>j.crew.includes(id)))await q(sb.from('jobs').update({crew:j.crew.filter(x=>x!==id)}).eq('id',j.id));await q(sb.from('people').delete().eq('id',id),'Removed');await load();go('people')}
+async function pcTog(pid,c,on){if(on)await q(sb.from('person_certs').insert({company_id:cid,person_id:pid,cert_id:c}),'Cert added');else await q(sb.from('person_certs').delete().eq('person_id',pid).eq('cert_id',c),'Cert removed');await load();render()}
+function addValid(d,n,u){const x=new Date(d+'T12:00');if(u==='months')x.setMonth(x.getMonth()+n);else if(u==='days')x.setDate(x.getDate()+n);else x.setFullYear(x.getFullYear()+n);return x.toISOString().slice(0,10)}
+async function pcDate(id,f,v,c){const patch={[f]:v||null};if(f==='acquired'&&v&&c){const ce=cert(c);if(ce&&ce.valid_n)patch.expires=addValid(v,ce.valid_n,ce.valid_u||'years')}await q(sb.from('person_certs').update(patch).eq('id',id),patch.expires&&f==='acquired'?'Expiry filled in':'Saved');await load();render()}
+async function upPhoto(id,pid,f){if(!f)return;const path=`${cid}/${pid}/${id}-${Date.now()}.${(f.name.split('.').pop()||'jpg').toLowerCase()}`;toast('Uploading…');
+ await q(sb.storage.from('cert-photos').upload(path,f,{upsert:true}));await q(sb.from('person_certs').update({photo_path:path}).eq('id',id),'Photo saved');await load();render()}
+async function viewPhoto(path,el){const {data}=await q(sb.storage.from('cert-photos').createSignedUrl(path,300));el.outerHTML=`<img class="photo" src="${data.signedUrl}">`}
+
+/* ---------- setup ---------- */
+function setupView(){return `<h1>Setup</h1><div class="card"><h2>Certs</h2>${D.certs.map(c=>`<div class="item" style="cursor:default"><div class="grow"><div class="t">${esc(c.name)}</div><div class="sub">${c.valid_n?`Valid for ${c.valid_n} ${c.valid_u}`:'No set validity'}</div></div><button class="lnk" style="color:#991b1b" onclick="certDel('${c.id}')">✕</button></div>`).join('')}
+ <label style="margin-top:10px">New cert<input id="nc" placeholder="e.g. Climber / Rescue"></label><div class="row"><label>Valid for<input id="ncN" type="number" min="0" placeholder="—"></label><label>&nbsp;<select id="ncU"><option>years</option><option>months</option><option>days</option></select></label></div><button class="btn" onclick="certAdd()">Add cert</button></div>
+ ${['types','custs'].map(k=>`<div class="card"><h2>${k==='types'?'Job types':'Customers'}</h2>${D[k].map(x=>`<div class="item" onclick="go('list',{k:'${k}',id:'${x.id}'})"><div class="grow"><div class="t">${esc(x.name)}</div><div class="sub">${x.certs.length} required cert${x.certs.length==1?'':'s'}</div></div>›</div>`).join('')}
+ <div class="row"><input id="n_${k}" placeholder="New ${k==='types'?'job type':'customer'}" style="flex:2"><button class="btn" style="flex:1;height:44px" onclick="listAdd('${k}')">Add</button></div></div>`).join('')}
+ ${isAdmin()?`<div class="card"><h2>Import from this phone</h2><p class="sub">Copies the certs, people, job types, customers and jobs saved in your old Cert Compliance app on this phone into ${esc(comp().name)}. Your old app isn't changed.</p><button class="btn sec" onclick="importPhone()">Import from this phone</button></div>`:''}`}
+const TBL={types:'job_types',custs:'customers'};
+async function certAdd(){const n=$('#nc').value.trim();if(!n)return toast('Enter a cert name');if(D.certs.some(c=>c.name.toLowerCase()===n.toLowerCase()))return toast('That cert already exists');const v=parseInt($('#ncN').value);await q(sb.from('certs').insert({company_id:cid,name:n,valid_n:v>0?v:null,valid_u:$('#ncU').value}),'Cert added');await load();render()}
+async function certDel(id){if(!confirm('Delete this cert everywhere?'))return;await q(sb.from('certs').delete().eq('id',id),'Deleted');await load();render()}
+async function listAdd(k){const n=$('#n_'+k).value.trim();if(!n)return;await q(sb.from(TBL[k]).insert({company_id:cid,name:n}),'Added');await load();render()}
+function listView(){const x=D[V.k].find(i=>i.id===V.id);if(!x)return setupView();
+ return `<button class="back" onclick="go('setup')">‹ Setup</button><div class="card"><label>${V.k==='types'?'Job type':'Customer'}<input value="${esc(x.name)}" onchange="listSet({name:this.value.trim()})"></label><h2>Required certs</h2><p class="sub" style="margin-top:-6px">New jobs with this ${V.k==='types'?'type':'customer'} start with these. Tick “1+” if only one person needs it.</p>
+ ${D.certs.map(c=>{const on=x.certs.includes(c.id);return `<div class="cb"><input type="checkbox" ${on?'checked':''} onchange="listTog('${c.id}',this.checked)"><div class="grow">${esc(c.name)}</div>${on?`<label style="display:flex;gap:6px;align-items:center;margin:0"><input type="checkbox" style="width:18px;height:18px;margin:0" ${x.one_of.includes(c.id)?'checked':''} onchange="listOne('${c.id}',this.checked)">1+</label>`:''}</div>`}).join('')}
+ <button class="btn red" style="margin-top:12px" onclick="listDel()">Delete</button></div>`}
+const cur=()=>D[V.k].find(i=>i.id===V.id);
+async function listSet(p){await q(sb.from(TBL[V.k]).update(p).eq('id',V.id),'Saved');await load();render()}
+async function listTog(c,on){const x=cur(),r=on?[...new Set([...x.certs,c])]:x.certs.filter(i=>i!==c);await listSet({certs:r,one_of:x.one_of.filter(i=>r.includes(i))})}
+async function listOne(c,on){const x=cur();await listSet({one_of:on?[...new Set([...x.one_of,c])]:x.one_of.filter(i=>i!==c)})}
+async function listDel(){if(!confirm('Delete?'))return;await q(sb.from(TBL[V.k]).delete().eq('id',V.id),'Deleted');await load();go('setup')}
+async function importPhone(){let raw=localStorage.getItem('certCompliance.simple.v1')||localStorage.getItem('certCompliance.v1');if(!raw)return toast('No saved data from the old app found on this phone');
+ let S;try{S=JSON.parse(raw)}catch(e){return toast('Old data could not be read')}
+ if(!confirm(`Import ${(S.certs||[]).length} certs, ${(S.employees||[]).length} people and ${(S.jobs||[]).length} jobs into ${comp().name}?`))return;
+ const cm={},pm={};const nm=x=>typeof x==='string'?x:(x&&x.name)||'';
+ for(const c of S.certs||[]){const ex=D.certs.find(d=>d.name.toLowerCase()===String(c.name).toLowerCase());cm[c.id]=ex?ex.id:(await q(sb.from('certs').insert({company_id:cid,name:c.name,valid_n:c.validN||null,valid_u:c.validU||'years'}).select()))[0].id}
+ const ids=a=>(a||[]).map(i=>cm[i]).filter(Boolean);
+ for(const [k,arr] of [['types',S.jobTypes],['custs',S.customers]])for(const x of arr||[]){const n=nm(x);if(!n||D[k].some(d=>d.name===n))continue;const r=ids(x.certs);await q(sb.from(TBL[k]).insert({company_id:cid,name:n,certs:r,one_of:ids(x.oneOf).filter(i=>r.includes(i))}))}
+ for(const e of S.employees||[]){const [p]=await q(sb.from('people').insert({company_id:cid,name:e.name}).select());pm[e.id]=p.id;const rows=Object.entries(e.certs||{}).filter(([k])=>cm[k]).map(([k,h])=>({company_id:cid,person_id:p.id,cert_id:cm[k],acquired:h.acquired||null,expires:h.expiry||null}));if(rows.length)await q(sb.from('person_certs').insert(rows))}
+ for(const j of S.jobs||[]){const r=ids(j.required);await q(sb.from('jobs').insert({company_id:cid,site:j.site||'',type:j.name||'',customer:j.customer||'',required:r,one_of:ids(j.oneOf).filter(i=>r.includes(i)),crew:(j.crew||[]).map(i=>pm[i]).filter(Boolean)}))}
+ toast('Import complete');await load();go('jobs')}
+
+/* ---------- admin ---------- */
+const link=e=>location.origin+location.pathname+'?invite='+encodeURIComponent(e);
+function adminView(){const ps=D.profiles.slice().sort((a,b)=>(a.name||a.email).localeCompare(b.name||b.email));
+ return `<h1>Team &amp; roles</h1><div class="card"><h2>Invite someone</h2><label>Email<input id="ie" type="email"></label><label>Name<input id="in"></label><div class="row"><label>Role<select id="ir"><option value="tech">Tech</option><option value="scheduler">Scheduler</option><option value="admin">Admin</option></select></label><label>Position<select id="ip"><option value="">—</option>${POS.map(x=>`<option>${x}</option>`).join('')}</select></label></div>
+ <label>Link to person on the People list (optional)<select id="iper"><option value="">${'Create new for Techs'}</option>${D.people.filter(p=>!p.user_id).map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join('')}</select></label><button class="btn" onclick="invite()">Send invite</button></div>
+ ${D.invites.length?`<div class="card"><h2>Waiting to sign up</h2>${D.invites.map(i=>`<div class="item" style="cursor:default"><div class="grow"><div class="t">${esc(i.name||i.email)}</div><div class="sub">${esc(i.email)} · ${cap(i.role)}</div><button class="lnk" onclick="copyLink('${esc(i.email)}')">Copy sign-up link</button></div><button class="lnk" style="color:#991b1b" onclick="invDel('${i.id}')">Cancel</button></div>`).join('')}</div>`:''}
+ <div class="card"><h2>Team (${ps.length})</h2>${ps.map(p=>`<div style="padding:10px 0;border-bottom:1px solid var(--line)"><div class="t">${esc(p.name||p.email)} ${posChip(p.position)}</div><div class="sub">${esc(p.email)}</div>
+ <div class="row"><select ${p.id===sess.user.id?'disabled':''} onchange="profSet('${p.id}',{role:this.value})">${['admin','scheduler','tech'].map(r=>`<option value="${r}" ${r===p.role?'selected':''}>${cap(r)}</option>`).join('')}</select><select onchange="profSet('${p.id}',{position:this.value||null})"><option value="">No position</option>${POS.map(x=>`<option ${x===p.position?'selected':''}>${x}</option>`).join('')}</select></div>
+ ${p.id!==sess.user.id?`<button class="lnk" style="color:#991b1b" onclick="profDel('${p.id}')">Remove access</button>`:''}</div>`).join('')}</div>
+ <div class="card"><h2>Recent activity</h2>${D.audit.slice(0,12).map(a=>`<div class="sub">${new Date(a.at).toLocaleString()} — <b>${esc(a.user_name)}</b> ${esc(a.action)}d ${esc({person_certs:'cert for',job_types:'job type',customers:'customer',certs:'cert',people:'person',jobs:'job'}[a.tbl]||a.tbl)} ${esc(a.summary||'')}</div>`).join('')||'<p class="sub">Nothing yet.</p>'}</div>`}
+async function invite(){const e=$('#ie').value.trim().toLowerCase();if(!/^\S+@\S+\.\S+$/.test(e))return toast('Enter a valid email');
+ await q(sb.from('pending_invites').insert({email:e,company_id:cid,role:$('#ir').value,name:$('#in').value.trim()||null,position:$('#ip').value||null,person_id:$('#iper').value||null,invited_by:sess.user.id}));
+ await copyLink(e,true);await load();render()}
+async function copyLink(e,fresh){const l=link(e);try{await navigator.clipboard.writeText(l);toast((fresh?'Invite saved. ':'')+'Sign-up link copied — text or email it to them')}catch(x){prompt('Send them this sign-up link:',l)}}
+async function invDel(id){await q(sb.from('pending_invites').delete().eq('id',id),'Invite cancelled');await load();render()}
+async function profSet(id,p){await q(sb.from('profiles').update(p).eq('id',id),'Saved');if(p.position!==undefined){const pe=D.people.find(x=>x.user_id===id);if(pe)await q(sb.from('people').update({position:p.position}).eq('id',pe.id))}await load();render()}
+async function profDel(id){if(!confirm('Remove this person\u2019s access? Their crew record stays.'))return;await q(sb.from('profiles').delete().eq('id',id),'Access removed');await load();render()}
+
+/* ---------- tech ---------- */
+function mineView(){const pid=D.people[0]&&D.people[0].id,j=D.jobs[0];
+ if(!pid)return `<div class="card"><h2>Welcome</h2><p class="sub">Your account isn't linked to a crew member yet. Ask your Admin.</p></div>`;
+ const my=D.pcs.filter(x=>x.person_id===pid),miss=j?j.required.filter(c=>!isOne(j,c)&&bad(status(pid,c))&&cert(c)):[];
+ return `<h1>Hi ${esc(D.people[0].name.split(' ')[0])}</h1>${j?`<div class="card"><div class="sub">My job</div><div class="big">${esc(j.site||j.type)}</div><div class="sub" style="font-size:15px">${esc([j.site?j.type:'',j.customer].filter(Boolean).join(' · '))}</div>
+ <div style="margin-top:10px">${miss.length?`<span class="pill r">You're missing ${esc(miss.map(c=>cert(c).name).join(', '))}</span>`:'<span class="pill g">You\u2019re ready for this job</span>'}</div>
+ ${j.required.length?`<div class="note"><b>Required:</b> ${j.required.filter(cert).map(c=>esc(cert(c).name)+(isOne(j,c)?' (1+)':'')).join(', ')}</div>`:''}</div>
+ <div class="card"><h2>My crew (${crew.length})</h2>${crew.map(c=>`<div class="item" style="cursor:default"><div class="grow"><div class="t">${esc(c.name)}${c.person_id===pid?' (you)':''} ${posChip(c.position)}</div></div>${c.ready?'<span class="pill g">Ready</span>':'<span class="pill r">Missing cert</span>'}</div>`).join('')}</div>`:'<div class="card"><h2>My job</h2><p class="sub">You\u2019re not assigned to a job right now.</p></div>'}
+ <div class="card" onclick="go('mycerts')" style="cursor:pointer"><h2>My certs ›</h2><div class="sub">${my.length} on file${my.filter(x=>status(pid,x.cert_id)==='soon').length?' · some expiring soon':''}</div></div>`}
+function myCertsView(){const p=D.people[0];if(!p)return mineView();const my=D.certs.filter(c=>pc(p.id,c.id));
+ return `<h1>My certs</h1><p class="sub">Dates are set by your Scheduler. You can upload a photo of each card.</p><div class="card">${my.map(c=>{const h=pc(p.id,c.id),s=status(p.id,c.id);return `<div class="cb"><div class="grow"><div class="t">${esc(c.name)} ${s==='expired'?'<span class="pill r">Expired</span>':s==='soon'?'<span class="pill a">Expires soon</span>':'<span class="pill g">Current</span>'}</div><div class="sub">${h.acquired?'Acquired '+fmt(h.acquired):''}${h.expires?' · Expires '+fmt(h.expires):' · No expiry'}</div>
+ <label class="lnk" style="display:inline-block;cursor:pointer">📷 ${h.photo_path?'Replace photo':'Upload photo'}<input type="file" accept="image/*" style="display:none" onchange="upPhoto('${h.id}','${p.id}',this.files[0])"></label>${h.photo_path?` <button class="lnk" onclick="viewPhoto('${h.photo_path}',this)">View photo</button>`:''}</div></div>`}).join('')||'<p class="sub">No certs on file yet.</p>'}</div>`}
+
+/* ---------- owner ---------- */
+function ownerHome(){cid=null;localStorage.removeItem('cc.app.ownerCid');D=null;go('owner')}
+async function openCo(id){cid=id;localStorage.setItem('cc.app.ownerCid',id);await load();go('jobs')}
+function coStat(c){if(!c.active)return'<span class="pill r">Access off</span>';if(c.trial_ends&&c.trial_ends>=today())return`<span class="pill b">Trial to ${fmt(c.trial_ends)}</span>`;return'<span class="pill g">Active</span>'}
+function ownerView(){const on=companies.filter(c=>c.active).length,mrr=companies.filter(c=>c.active&&!(c.trial_ends&&c.trial_ends>=today())).reduce((s,c)=>s+(+c.price||0),0);
+ return `<h1>Companies</h1><div class="row" style="margin-bottom:12px"><div class="card" style="margin:0;padding:12px"><div class="sub">With access</div><div class="big" style="font-size:24px">${on}/${companies.length}</div></div><div class="card" style="margin:0;padding:12px"><div class="sub">Monthly (set prices)</div><div class="big" style="font-size:24px">$${mrr.toFixed(0)}</div></div></div>
+ <button class="btn" onclick="go('invco')">＋ Invite a company</button><div class="card" style="padding:4px 14px;margin-top:12px">${companies.map(c=>`<div class="item"><div class="grow" onclick="go('company',{id:'${c.id}'})"><div class="t">${esc(c.name)}${c.is_test?' <span class="chip">TEST</span>':''}</div><div class="sub">${c.price?'$'+(+c.price).toFixed(0)+(c.plan==='per_user'?'/user':'')+'/mo · ':''}${coStat(c)}</div></div><input type="checkbox" class="sw" ${c.active?'checked':''} aria-label="Access" onchange="coAccess('${c.id}',this.checked)"></div>`).join('')||'<p class="sub">No companies yet.</p>'}</div>
+ <div class="note">💳 Billing with Stripe comes later. For now, switch access on or off by hand.</div>`}
+async function coAccess(id,on){if(!on&&!confirm('Turn off access? Their people won\u2019t be able to sign in. Data is kept.'))return render();await q(sb.from('companies').update({active:on}).eq('id',id),on?'Access on':'Access off — data kept');companies=await q(sb.from('companies').select('*').order('name'));render()}
+function companyView(){const c=companies.find(x=>x.id===V.id);if(!c)return ownerView();
+ return `<button class="back" onclick="go('owner')">‹ Companies</button><div class="card"><div class="row" style="align-items:center"><h1 class="grow">${esc(c.name)}</h1><span style="flex:none">${coStat(c)}</span></div>
+ <div class="item" style="cursor:default"><div class="grow"><div class="t">Access</div><div class="sub">Off = members can't sign in. Data is kept.</div></div><input type="checkbox" class="sw" ${c.active?'checked':''} onchange="coAccess('${c.id}',this.checked)"></div>
+ <label style="margin-top:10px">Company name<input id="cn" value="${esc(c.name)}"></label><div class="row"><label>Pricing<select id="cpl"><option value="per_company" ${c.plan==='per_company'?'selected':''}>Per company</option><option value="per_user" ${c.plan==='per_user'?'selected':''}>Per user</option></select></label><label>Price $/mo<input id="cpr" type="number" value="${c.price??''}"></label></div>
+ <label>Trial ends<input id="ctr" type="date" value="${c.trial_ends||''}"></label><label>Notes<textarea id="cno" rows="2">${esc(c.notes||'')}</textarea></label><button class="btn" onclick="coSave('${c.id}')">Save</button></div>
+ <div class="card"><h2>Billing</h2><div class="note">💳 Stripe billing isn't connected yet. Once it is, this shows payments and turns access off automatically after a 7-day grace period.</div></div>
+ <button class="btn sec" onclick="openCo('${c.id}')">Open company as Admin ›</button><button class="btn red" style="margin-top:10px" onclick="coDel('${c.id}')">Delete company and all its data</button>`}
+async function coSave(id){await q(sb.from('companies').update({name:$('#cn').value.trim(),plan:$('#cpl').value,price:$('#cpr').value||null,trial_ends:$('#ctr').value||null,notes:$('#cno').value}).eq('id',id),'Saved');companies=await q(sb.from('companies').select('*').order('name'));render()}
+async function coDel(id){const c=companies.find(x=>x.id===id);if(prompt(`Type the company name to permanently delete it:\n${c.name}`)!==c.name)return;await q(sb.from('companies').delete().eq('id',id),'Deleted');companies=await q(sb.from('companies').select('*').order('name'));go('owner')}
+function inviteCoView(){return `<button class="back" onclick="go('owner')">‹ Companies</button><h1>Invite a company</h1><div class="card"><label>Company name<input id="ncn" placeholder="e.g. Example Towers Inc."></label><label>Admin's name<input id="nan"></label><label>Admin's email<input id="nae" type="email"></label>
+ <div class="row"><label>Pricing<select id="npl"><option value="per_company">Per company</option><option value="per_user">Per user</option></select></label><label>Price $/mo<input id="npr" type="number"></label></div><label>Free trial (days, optional)<input id="ntd" type="number" min="0" placeholder="e.g. 30"></label>
+ <button class="btn" onclick="inviteCo()">Create company &amp; invite admin</button><p class="sub">You'll get a sign-up link to send to their Admin. They then invite their own team.</p></div>`}
+async function inviteCo(){const n=$('#ncn').value.trim(),e=$('#nae').value.trim().toLowerCase(),d=parseInt($('#ntd').value);if(!n)return toast('Enter a company name');if(!/^\S+@\S+\.\S+$/.test(e))return toast('Enter the admin\u2019s email');
+ const te=d>0?new Date(Date.now()+d*864e5).toISOString().slice(0,10):null;const [c]=await q(sb.from('companies').insert({name:n,plan:$('#npl').value,price:$('#npr').value||null,trial_ends:te}).select());
+ await q(sb.from('pending_invites').insert({email:e,company_id:c.id,role:'admin',name:$('#nan').value.trim()||null,invited_by:sess.user.id}));companies=await q(sb.from('companies').select('*').order('name'));await copyLink(e,true);go('company',{id:c.id})}
+boot();
+</script></body></html>
