@@ -25,6 +25,7 @@ input,select,textarea{font:inherit;font-size:16px;width:100%;padding:10px;border
 .big{font-size:30px;font-weight:800}.sw{appearance:none;width:46px;height:28px;border-radius:999px;background:#cbd5e1;position:relative;margin:0;flex:none;padding:0;border:0;cursor:pointer}.sw:checked{background:#16a34a}.sw:after{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;transition:.15s}.sw:checked:after{left:21px}
 .center{max-width:420px;margin:40px auto}.err{color:#991b1b;font-size:14px;min-height:20px}
 .back{background:none;border:0;color:var(--pri);font:inherit;font-weight:600;padding:0 0 8px;cursor:pointer}
+.ptr{position:fixed;top:0;left:50%;transform:translate(-50%,-60px);background:#fff;color:var(--ink2);font-size:13px;font-weight:600;padding:8px 14px;border-radius:999px;box-shadow:0 2px 10px #0f172a26;z-index:20;opacity:0;transition:opacity .15s;pointer-events:none}.ptr.show{opacity:1}.spin{display:inline-block;width:12px;height:12px;border:2px solid #cbd5e1;border-top-color:var(--pri);border-radius:50%;animation:sp .7s linear infinite;vertical-align:-1px}@keyframes sp{to{transform:rotate(360deg)}}html,body{overscroll-behavior-y:contain}
 .photo{max-width:100%;border-radius:8px;margin-top:6px}
 </style></head><body><div id="app"><main class="center"><div class="card">Loading…</div></main></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -52,7 +53,7 @@ async function start(){me=(await q(sb.from('profiles').select('*').eq('id',sess.
  if(owner){companies=await q(sb.from('companies').select('*').order('name'));cid=localStorage.getItem('cc.app.ownerCid');if(!companies.some(c=>c.id===cid))cid=null;V={tab:cid?'jobs':'owner'}}
  else if(me){const c=await q(sb.from('companies').select('*'));if(!c.length){blocked=true;return render()}companies=c;cid=me.company_id;V={tab:me.role==='tech'?'mine':'jobs'}}
  else{blocked=true;return render()}
- if(cid)await load();render();live()}
+ if(cid)await load();history.replaceState({V,cid},'');depth=0;render();live()}
 async function signIn(){const e=$('#em').value.trim(),p=$('#pw').value;$('#err').textContent='';
  const {data,error}=await sb.auth.signInWithPassword({email:e,password:p});if(error)return $('#err').textContent=error.message;sess=data.session;start()}
 async function signUp(){const e=$('#em').value.trim(),p=$('#pw').value;$('#err').textContent='';if(p.length<8)return $('#err').textContent='Password must be at least 8 characters';
@@ -79,9 +80,9 @@ async function load(){const f=t=>sb.from(t).select('*').eq('company_id',cid);con
  if(role==='admin')D.invites=await q(sb.from('pending_invites').select('*').eq('company_id',cid));
  if(role==='tech'){crew=(await q(sb.rpc('my_crew')))||[]}}
 let lt=null;function live(){if(chan)sb.removeChannel(chan);chan=sb.channel('cc').on('postgres_changes',{event:'*',schema:'public'},()=>{clearTimeout(lt);lt=setTimeout(refresh,400)}).subscribe()}
-async function refresh(){if(!sess)return;const busy=document.activeElement&&/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName);if(busy){clearTimeout(lt);lt=setTimeout(refresh,1500);return}
+async function refresh(force){if(!sess)return;const busy=!force&&document.activeElement&&/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName);if(busy){clearTimeout(lt);lt=setTimeout(refresh,1500);return}
  if(owner)companies=await q(sb.from('companies').select('*').order('name'));else{const c=await q(sb.from('companies').select('*'));if(!c.length){blocked=true;return render()}}
- if(cid)await load();render()}
+ if(cid)await load();if(V.tab==='company')await loadCoInv(V.id);if(V.tab==='mine'||V.tab==='mycerts'){}render()}
 const myRole=()=>owner?'admin':me&&me.role;const canEdit=()=>['admin','scheduler'].includes(myRole());const isAdmin=()=>myRole()==='admin';
 const cert=id=>D.certs.find(c=>c.id===id),person=id=>D.people.find(p=>p.id===id),job=id=>D.jobs.find(j=>j.id===id);
 const comp=()=>companies.find(c=>c.id===cid)||{};
@@ -103,7 +104,17 @@ const posChip=p=>p?`<span class="chip ${p==='Foreman'?'fm':''}">${esc(p)}</span>
 const crewSort=a=>a.slice().sort((x,y)=>(x.position==='Foreman'?0:1)-(y.position==='Foreman'?0:1)||x.name.localeCompare(y.name));
 
 /* ---------- shell ---------- */
-function go(tab,extra){V=Object.assign({tab},extra||{});render();scrollTo(0,0)}
+let depth=0;function go(tab,extra,replace){V=Object.assign({tab},extra||{});const st={V,cid};if(replace)history.replaceState(st,'');else{history.pushState(st,'');depth++}render();scrollTo(0,0)}
+const homeTab=()=>owner&&!cid?'owner':myRole()==='tech'?'mine':'jobs';
+function goBack(fb){if(depth>0){history.back()}else go(fb||homeTab(),null,true)}
+addEventListener('popstate',async e=>{const st=e.state;if(!st||!sess)return;depth=Math.max(0,depth-1);V=st.V;
+ if(owner&&st.cid!==cid){cid=st.cid;if(cid){localStorage.setItem('cc.app.ownerCid',cid);await load()}else{localStorage.removeItem('cc.app.ownerCid');D=null}}
+ if(V.tab==='company')await loadCoInv(V.id);render();scrollTo(0,0)});
+/* pull to refresh */
+(()=>{let y0=null,dy=0,el=null;const ind=()=>{if(!el){el=document.createElement('div');el.id='ptr';document.body.appendChild(el)}return el};
+ addEventListener('touchstart',e=>{if(!sess||scrollY>0||e.touches.length>1||e.target.closest('input,textarea,select,.sug'))return y0=null;y0=e.touches[0].clientY;dy=0},{passive:true});
+ addEventListener('touchmove',e=>{if(y0==null)return;dy=e.touches[0].clientY-y0;if(dy<=0||scrollY>0){ind().style.cssText='';return}const i=ind();i.className='ptr show';i.style.transform=`translate(-50%,${Math.min(dy,110)*0.6}px)`;i.textContent=dy>70?'↻ Release to refresh':'↓ Pull to refresh'},{passive:true});
+ addEventListener('touchend',async()=>{if(y0==null)return;const d=dy;y0=null;dy=0;const i=ind();if(d>70){i.className='ptr show';i.style.transform='translate(-50%,40px)';i.innerHTML='<span class="spin"></span> Refreshing…';try{await refresh(true)}catch(x){}toast('Up to date')}i.className='ptr';i.style.transform=''},{passive:true});})();
 function render(){const a=$('#app');if(!sess)return a.innerHTML=authView();
  if(blocked)return a.innerHTML=`<main class="center"><div class="card" style="text-align:center"><div style="font-size:40px">⏸️</div><h1>Access paused</h1><p class="sub">Your company's access to Cert Compliance is turned off right now. Your data is safe. Please contact your company Admin.</p><button class="btn sec" onclick="signOut()">Sign out</button></div></main>`;
  if(V.tab==='reset')return a.innerHTML=authView();
@@ -117,7 +128,7 @@ function render(){const a=$('#app');if(!sess)return a.innerHTML=authView();
  a.innerHTML=`<header><div class="logo">${owner&&!cid?'Owner dashboard':esc(c.name||'Cert Compliance')}<small>${owner?'Platform owner'+(cid?' · viewing as Admin':''):esc(cap(role))+(me&&me.position?' · '+esc(me.position):'')}</small></div><button class="av" onclick="go('account')" aria-label="Account">${esc(ini((me&&me.name)||sess.user.email))}</button></header>
  <main>${(views[V.tab]||jobsView)()}</main>${tabs.length>1?`<nav class="bt">${tabs.map(t=>`<button class="${top===t[0]?'on':''}" onclick="${t[0]==='owner'?'ownerHome()':`go('${t[0]}')`}"><i>${t[1]}</i>${t[2]}</button>`).join('')}</nav>`:''}`}
 const cap=s=>s?s[0].toUpperCase()+s.slice(1):'';const ini=s=>String(s).split(/[\s@.]+/).filter(Boolean).slice(0,2).map(x=>x[0].toUpperCase()).join('');
-function accountView(){return `<div class="card"><h2>Account</h2><div class="t">${esc(me&&me.name||'')}</div><div class="sub">${esc(sess.user.email)}</div><div class="sub">${owner?'Platform owner':esc(cap(me.role))}${me&&me.position?' · '+esc(me.position):''}</div>
+function accountView(){return `<button class="back" onclick="goBack()">← Back</button><div class="card"><h2>Account</h2><div class="t">${esc(me&&me.name||'')}</div><div class="sub">${esc(sess.user.email)}</div><div class="sub">${owner?'Platform owner':esc(cap(me.role))}${me&&me.position?' · '+esc(me.position):''}</div>
  <label style="margin-top:12px">Your name<input id="myname" value="${esc(me&&me.name||'')}"></label>${owner||isAdmin()?'<button class="btn sec" onclick="saveMyName()">Save name</button>':''}
  <button class="btn sec" onclick="sb.auth.resetPasswordForEmail(sess.user.email,{redirectTo:location.origin+location.pathname}).then(()=>toast('Reset link emailed'))">Email me a password reset link</button><button class="btn red" style="margin-top:10px" onclick="signOut()">Sign out</button></div>`}
 async function saveMyName(){await q(sb.from('profiles').update({name:$('#myname').value.trim()}).eq('id',sess.user.id),'Saved');me.name=$('#myname').value.trim();render()}
@@ -128,15 +139,15 @@ function jobsView(){const s=(V.q||'').toLowerCase(),list=D.jobs.filter(j=>!s||[j
  <button class="btn" onclick="go('newjob')">＋ New job</button><input placeholder="Search jobs…" value="${esc(V.q||'')}" oninput="V.q=this.value;const p=this.selectionStart;render();const i=$('main input');i.focus();i.setSelectionRange(p,p)">
  <div class="card" style="padding:4px 14px">${list.map(j=>`<div class="item" onclick="go('job',{id:'${j.id}'})"><div class="grow"><div class="t" style="font-size:17px">${esc(j.site||j.type||'Untitled job')}</div><div class="sub">${esc([j.site?j.type:'',j.customer].filter(Boolean).join(' · '))} · ${j.crew.length} crew</div></div>${jpill(j)}</div>`).join('')||'<p class="sub">No jobs yet. Tap “New job”.</p>'}</div>`}
 function newJobView(){const o=(arr,ph)=>`<option value="">${ph}</option>`+arr.map(x=>`<option>${esc(x.name)}</option>`).join('');
- return `<button class="back" onclick="go('jobs')">‹ Jobs</button><div class="card"><h2>New job</h2><label>Site<input id="js" placeholder="Site ID, e.g. A1N0001"></label><label>Job type<select id="jt" onchange="prevNew()">${o(D.types,'Choose a job type')}</select></label><label>Customer<select id="jcu" onchange="prevNew()">${o(D.custs,'No customer')}</select></label><div id="prev"></div><button class="btn" onclick="addJob()">Create job</button></div>`}
+ return `<button class="back" onclick="goBack('jobs')">← Jobs</button><div class="card"><h2>New job</h2><label>Site<input id="js" placeholder="Site ID, e.g. A1N0001"></label><label>Job type<select id="jt" onchange="prevNew()">${o(D.types,'Choose a job type')}</select></label><label>Customer<select id="jcu" onchange="prevNew()">${o(D.custs,'No customer')}</select></label><div id="prev"></div><button class="btn" onclick="addJob()">Create job</button></div>`}
 function reqFrom(t,c){const r=new Set(),o=new Set();[D.types.find(x=>x.name===t),D.custs.find(x=>x.name===c)].filter(Boolean).forEach(x=>{x.certs.forEach(i=>r.add(i));x.one_of.forEach(i=>o.add(i))});return{required:[...r].filter(cert),one_of:[...o].filter(i=>r.has(i))}}
 function prevNew(){const r=reqFrom($('#jt').value,$('#jcu').value);$('#prev').innerHTML=r.required.length?`<div class="note"><b>Required certs:</b> ${r.required.map(i=>esc(cert(i).name)+(r.one_of.includes(i)?' (1+)':'')).join(', ')}</div>`:''}
 async function addJob(){const t=$('#jt').value,c=$('#jcu').value,s=$('#js').value.trim();if(!s&&!t)return toast('Enter a site or job type');const r=reqFrom(t,c);
- const [j]=await q(sb.from('jobs').insert({company_id:cid,site:s,type:t,customer:c,...r}).select(),'Job created — now add crew');await load();go('job',{id:j.id});setTimeout(()=>{const i=$('#crewIn');if(i)i.focus()},100)}
+ const [j]=await q(sb.from('jobs').insert({company_id:cid,site:s,type:t,customer:c,...r}).select(),'Job created — now add crew');await load();go('job',{id:j.id},true);setTimeout(()=>{const i=$('#crewIn');if(i)i.focus()},100)}
 function jobView(){const j=job(V.id);if(!j)return jobsView();const ed=canEdit(),g=gaps(j),t=teamGaps(j),cr=crewSort(j.crew.map(person).filter(Boolean));
  const hist=D.audit.filter(a=>a.row_id===j.id).slice(0,5);
  const lines=[];if(j.crew.length<2)lines.push(`Needs at least 2 crew (has ${j.crew.length})`);t.forEach(c=>lines.push(`Nobody on the crew holds ${esc(c.name)} (need 1+)`));g.forEach(([p,c,s])=>lines.push(`${esc(p.name)} — ${esc(c.name)} ${s==='expired'?'expired':'missing'}`));
- return `<button class="back" onclick="go('jobs')">‹ Jobs</button><div class="card"><div class="big">${esc(j.site||j.type||'Untitled')}</div><div class="sub" style="font-size:15px">${esc([j.site?j.type:'',j.customer].filter(Boolean).join(' · '))}</div><div style="margin:10px 0">${jpill(j)}</div>
+ return `<button class="back" onclick="goBack('jobs')">← Jobs</button><div class="card"><div class="big">${esc(j.site||j.type||'Untitled')}</div><div class="sub" style="font-size:15px">${esc([j.site?j.type:'',j.customer].filter(Boolean).join(' · '))}</div><div style="margin:10px 0">${jpill(j)}</div>
  ${lines.map(l=>`<div class="gap">✘ ${l}</div>`).join('')}${!jobBad(j)&&j.required.length?'<div class="ok">✔ All crew members hold required certs.</div>':''}
  <div class="sub" style="margin-top:8px">Last updated ${new Date(j.updated_at).toLocaleString()} by ${esc(j.updated_by||'')}</div></div>
  <div class="card"><h2>Crew (${j.crew.length})</h2>${cr.map(p=>`<div class="item" style="cursor:default"><div class="grow"><div class="t">${esc(p.name)} ${posChip(p.position)}</div></div>${personPill(p,j)}${ed?`<button class="lnk" style="color:#991b1b;margin-left:6px" onclick="crewDel('${j.id}','${p.id}')">✕</button>`:''}</div>`).join('')||'<p class="sub">No crew yet.</p>'}
@@ -170,7 +181,7 @@ function certRows(pid,ed,techUpload){return D.certs.map(c=>{const h=pc(pid,c.id)
  ${h?`<div class="dates"><label>Acquired<input type="date" value="${h.acquired||''}" ${ed?'':'disabled'} onchange="pcDate('${h.id}','acquired',this.value,'${c.id}')"></label><label>Expires${c.valid_n?` <span class="sub">(${c.valid_n} ${c.valid_u})</span>`:''}<input type="date" value="${h.expires||''}" ${ed?'':'disabled'} onchange="pcDate('${h.id}','expires',this.value)"></label></div>
  ${ed||techUpload?`<label class="lnk" style="display:inline-block;cursor:pointer">📷 ${h.photo_path?'Replace photo':'Upload photo'}<input type="file" accept="image/*" style="display:none" onchange="upPhoto('${h.id}','${pid}',this.files[0])"></label>`:''}${h.photo_path?` <button class="lnk" onclick="viewPhoto('${h.photo_path}',this)">View photo</button>`:''}`:''}</div></div>`}).join('')||'<p class="sub">No certs set up yet (Setup tab).</p>'}
 function personView(){const p=person(V.id);if(!p)return peopleView();const ed=canEdit(),j=jobOf(p.id);
- return `<button class="back" onclick="go('people')">‹ People</button><div class="card"><label>Name<input value="${esc(p.name)}" onchange="pSet('${p.id}',{name:this.value.trim()})"></label>
+ return `<button class="back" onclick="goBack('people')">← People</button><div class="card"><label>Name<input value="${esc(p.name)}" onchange="pSet('${p.id}',{name:this.value.trim()})"></label>
  <label>Position ${isAdmin()?'':'<span class="sub">🔒 Only an Admin can change this</span>'}<select ${isAdmin()?'':'disabled'} onchange="pSet('${p.id}',{position:this.value||null})"><option value="">—</option>${POS.map(x=>`<option ${x===p.position?'selected':''}>${x}</option>`).join('')}</select></label>
  <div class="sub">${j?`On job <b>${esc(j.site||j.type)}</b>`:'Not on a job'}${p.user_id?' · has a login':''}</div></div>
  <div class="card"><h2>Certs</h2>${certRows(p.id,ed)}</div>${ed?`<button class="btn red" onclick="pDel('${p.id}')">Remove person</button>`:''}`}
@@ -194,7 +205,7 @@ async function certAdd(){const n=$('#nc').value.trim();if(!n)return toast('Enter
 async function certDel(id){if(!confirm('Delete this cert everywhere?'))return;await q(sb.from('certs').delete().eq('id',id),'Deleted');await load();render()}
 async function listAdd(k){const n=$('#n_'+k).value.trim();if(!n)return;await q(sb.from(TBL[k]).insert({company_id:cid,name:n}),'Added');await load();render()}
 function listView(){const x=D[V.k].find(i=>i.id===V.id);if(!x)return setupView();
- return `<button class="back" onclick="go('setup')">‹ Setup</button><div class="card"><label>${V.k==='types'?'Job type':'Customer'}<input value="${esc(x.name)}" onchange="listSet({name:this.value.trim()})"></label><h2>Required certs</h2><p class="sub" style="margin-top:-6px">New jobs with this ${V.k==='types'?'type':'customer'} start with these. Tick “1+” if only one person needs it.</p>
+ return `<button class="back" onclick="goBack('setup')">← Setup</button><div class="card"><label>${V.k==='types'?'Job type':'Customer'}<input value="${esc(x.name)}" onchange="listSet({name:this.value.trim()})"></label><h2>Required certs</h2><p class="sub" style="margin-top:-6px">New jobs with this ${V.k==='types'?'type':'customer'} start with these. Tick “1+” if only one person needs it.</p>
  ${D.certs.map(c=>{const on=x.certs.includes(c.id);return `<div class="cb"><input type="checkbox" ${on?'checked':''} onchange="listTog('${c.id}',this.checked)"><div class="grow">${esc(c.name)}</div>${on?`<label style="display:flex;gap:6px;align-items:center;margin:0"><input type="checkbox" style="width:18px;height:18px;margin:0" ${x.one_of.includes(c.id)?'checked':''} onchange="listOne('${c.id}',this.checked)">1+</label>`:''}</div>`}).join('')}
  <button class="btn red" style="margin-top:12px" onclick="listDel()">Delete</button></div>`}
 const cur=()=>D[V.k].find(i=>i.id===V.id);
@@ -217,7 +228,7 @@ async function importPhone(){let raw=localStorage.getItem('certCompliance.simple
 async function shareLink(e){const url=link(e);if(navigator.share){try{await navigator.share({title:'Join Cert Compliance',text:"You're invited to Cert Compliance. Tap to create your account:",url});return}catch(x){if(x.name==='AbortError')return}}copyLink(e)}
 function invRows(list){return list.map(i=>`<div style="padding:10px 0;border-bottom:1px solid var(--line)"><div class="t">${esc(i.name||i.email)}</div><div class="sub">${esc(i.email)} · ${cap(i.role)}</div>
  <div class="row" style="margin-top:6px"><button class="btn" onclick="shareLink('${esc(i.email)}')">📤 Share link</button><button class="btn sec" onclick="copyLink('${esc(i.email)}')">Copy link</button></div><button class="lnk" style="color:#991b1b" onclick="invDel('${i.id}')">Cancel invite</button></div>`).join('')}
-function inviteReadyView(){return `<div class="card" style="text-align:center"><div style="font-size:44px">✉️</div><h1>Invite ready</h1><p class="sub">Send this link to <b>${esc(V.email)}</b>. They tap it and create their account.</p>
+function inviteReadyView(){return `<button class="back" onclick="${V.back}">← Back</button><div class="card" style="text-align:center"><div style="font-size:44px">✉️</div><h1>Invite ready</h1><p class="sub">Send this link to <b>${esc(V.email)}</b>. They tap it and create their account.</p>
  <div class="note" style="word-break:break-all;text-align:left;font-size:14px;user-select:all">${esc(link(V.email))}</div>
  <button class="btn" style="font-size:17px;padding:14px" onclick="shareLink('${esc(V.email)}')">📤 Share link</button><button class="btn sec" style="margin-top:10px" onclick="copyLink('${esc(V.email)}')">Copy link</button>
  <div class="note" style="text-align:left">ℹ️ The app doesn't email invites yet — send this link by text or email. You can find it again under “Waiting to sign up”.</div>
@@ -264,7 +275,7 @@ function ownerView(){const on=companies.filter(c=>c.active).length,mrr=companies
  <div class="note">💳 Billing with Stripe comes later. For now, switch access on or off by hand.</div>`}
 async function coAccess(id,on){if(!on&&!confirm('Turn off access? Their people won\u2019t be able to sign in. Data is kept.'))return render();await q(sb.from('companies').update({active:on}).eq('id',id),on?'Access on':'Access off — data kept');companies=await q(sb.from('companies').select('*').order('name'));render()}
 function companyView(){const c=companies.find(x=>x.id===V.id);if(!c)return ownerView();
- return `<button class="back" onclick="go('owner')">‹ Companies</button><div class="card"><div class="row" style="align-items:center"><h1 class="grow">${esc(c.name)}</h1><span style="flex:none">${coStat(c)}</span></div>
+ return `<button class="back" onclick="goBack('owner')">← Companies</button><div class="card"><div class="row" style="align-items:center"><h1 class="grow">${esc(c.name)}</h1><span style="flex:none">${coStat(c)}</span></div>
  <div class="item" style="cursor:default"><div class="grow"><div class="t">Access</div><div class="sub">Off = members can't sign in. Data is kept.</div></div><input type="checkbox" class="sw" ${c.active?'checked':''} onchange="coAccess('${c.id}',this.checked)"></div>
  <label style="margin-top:10px">Company name<input id="cn" value="${esc(c.name)}"></label><div class="row"><label>Pricing<select id="cpl"><option value="per_company" ${c.plan==='per_company'?'selected':''}>Per company</option><option value="per_user" ${c.plan==='per_user'?'selected':''}>Per user</option></select></label><label>Price $/mo<input id="cpr" type="number" value="${c.price??''}"></label></div>
  <label>Trial ends<input id="ctr" type="date" value="${c.trial_ends||''}"></label><label>Notes<textarea id="cno" rows="2">${esc(c.notes||'')}</textarea></label><button class="btn" onclick="coSave('${c.id}')">Save</button></div>
@@ -273,7 +284,7 @@ function companyView(){const c=companies.find(x=>x.id===V.id);if(!c)return owner
  <button class="btn sec" onclick="openCo('${c.id}')">Open company as Admin ›</button><button class="btn red" style="margin-top:10px" onclick="coDel('${c.id}')">Delete company and all its data</button>`}
 async function coSave(id){await q(sb.from('companies').update({name:$('#cn').value.trim(),plan:$('#cpl').value,price:$('#cpr').value||null,trial_ends:$('#ctr').value||null,notes:$('#cno').value}).eq('id',id),'Saved');companies=await q(sb.from('companies').select('*').order('name'));render()}
 async function coDel(id){const c=companies.find(x=>x.id===id);if(prompt(`Type the company name to permanently delete it:\n${c.name}`)!==c.name)return;await q(sb.from('companies').delete().eq('id',id),'Deleted');companies=await q(sb.from('companies').select('*').order('name'));go('owner')}
-function inviteCoView(){return `<button class="back" onclick="go('owner')">‹ Companies</button><h1>Invite a company</h1><div class="card"><label>Company name<input id="ncn" placeholder="e.g. Example Towers Inc."></label><label>Admin's name<input id="nan"></label><label>Admin's email<input id="nae" type="email"></label>
+function inviteCoView(){return `<button class="back" onclick="goBack('owner')">← Companies</button><h1>Invite a company</h1><div class="card"><label>Company name<input id="ncn" placeholder="e.g. Example Towers Inc."></label><label>Admin's name<input id="nan"></label><label>Admin's email<input id="nae" type="email"></label>
  <div class="row"><label>Pricing<select id="npl"><option value="per_company">Per company</option><option value="per_user">Per user</option></select></label><label>Price $/mo<input id="npr" type="number"></label></div><label>Free trial (days, optional)<input id="ntd" type="number" min="0" placeholder="e.g. 30"></label>
  <button class="btn" onclick="inviteCo()">Create company &amp; invite admin</button><p class="sub">You'll get a sign-up link to send to their Admin. They then invite their own team.</p></div>`}
 async function inviteCo(){const n=$('#ncn').value.trim(),e=$('#nae').value.trim().toLowerCase(),d=parseInt($('#ntd').value);if(!n)return toast('Enter a company name');if(!/^\S+@\S+\.\S+$/.test(e))return toast('Enter the admin\u2019s email');
