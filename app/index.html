@@ -30,8 +30,9 @@ input,select,textarea{font:inherit;font-size:16px;width:100%;padding:10px;border
 </style></head><body><div id="app"><main class="center"><div class="card">Loading…</div></main></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-const BUILD='20261012204310';
+const BUILD='20261012205905';
 async function checkVer(){try{const r=await fetch('version.txt?'+Date.now(),{cache:'no-store'});if(!r.ok)return;const v=(await r.text()).trim();
+ if(v&&v!==BUILD&&typeof TYPING==='function'&&TYPING()){document.addEventListener('focusout',()=>setTimeout(checkVer,300),{once:true});return}
  if(v&&v!==BUILD&&sessionStorage.getItem('cc.app.reloaded')!==v){sessionStorage.setItem('cc.app.reloaded',v);const u=new URLSearchParams(location.search);u.set('v',v);location.replace(location.pathname+'?'+u.toString()+location.hash)}}catch(e){}}
 checkVer();document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')checkVer()});
 const SB_URL='https://ajsxfuguasqppuupepib.supabase.co',SB_ANON='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFqc3hmdWd1YXNxcHB1dXBlcGliIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE4Mjk4NDksImV4cCI6MjEwNzQwNTg0OX0.ARn8MVRF4rb2eUnLI81rbZzFk_oDAABBH6CH8i0rB4I';
@@ -108,19 +109,22 @@ const posChip=p=>p?`<span class="chip ${p==='Foreman'?'fm':''}">${esc(p)}</span>
 const crewSort=a=>a.slice().sort((x,y)=>(x.position==='Foreman'?0:1)-(y.position==='Foreman'?0:1)||x.name.localeCompare(y.name));
 
 /* ---------- shell ---------- */
-let depth=0;function go(tab,extra,replace){V=Object.assign({tab},extra||{});const st={V,cid};if(replace)history.replaceState(st,'');else{history.pushState(st,'');depth++}render();scrollTo(0,0)}
+let depth=0;function go(tab,extra,replace){V=Object.assign({tab},extra||{});const st={V,cid};if(replace)history.replaceState(st,'');else{history.pushState(st,'');depth++}render(true);scrollTo(0,0)}
 const homeTab=()=>owner&&!cid?'owner':myRole()==='tech'?'mine':'jobs';
 function goBack(fb){if(depth>0){history.back()}else go(fb||homeTab(),null,true)}
 addEventListener('popstate',async e=>{const st=e.state;if(!st||!sess)return;depth=Math.max(0,depth-1);V=st.V;
  if(owner&&st.cid!==cid){cid=st.cid;if(cid){localStorage.setItem('cc.app.ownerCid',cid);await load()}else{localStorage.removeItem('cc.app.ownerCid');D=null}}
- if(V.tab==='company')await loadCoInv(V.id);render();scrollTo(0,0)});
+ if(V.tab==='company')await loadCoInv(V.id);render(true);scrollTo(0,0)});
 addEventListener('pagehide',()=>{Object.keys(SQ).forEach(k=>{if(SQ[k].t)flush(k)})});document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')Object.keys(SQ).forEach(k=>{if(SQ[k].t)flush(k)})});
 /* pull to refresh */
 (()=>{let y0=null,dy=0,el=null;const ind=()=>{if(!el){el=document.createElement('div');el.id='ptr';document.body.appendChild(el)}return el};
- addEventListener('touchstart',e=>{if(!sess||scrollY>0||e.touches.length>1||e.target.closest('input,textarea,select,.sug'))return y0=null;y0=e.touches[0].clientY;dy=0},{passive:true});
+ addEventListener('touchstart',e=>{if(!sess||scrollY>0||e.touches.length>1||e.target.closest('input,textarea,select,label,.sug')||TYPING())return y0=null;y0=e.touches[0].clientY;dy=0},{passive:true});
  addEventListener('touchmove',e=>{if(y0==null)return;dy=e.touches[0].clientY-y0;if(dy<=0||scrollY>0){ind().style.cssText='';return}const i=ind();i.className='ptr show';i.style.transform=`translate(-50%,${Math.min(dy,110)*0.6}px)`;i.textContent=dy>70?'↻ Release to refresh':'↓ Pull to refresh'},{passive:true});
  addEventListener('touchend',async()=>{if(y0==null)return;const d=dy;y0=null;dy=0;const i=ind();if(d>70){i.className='ptr show';i.style.transform='translate(-50%,40px)';i.innerHTML='<span class="spin"></span> Refreshing…';checkVer();try{await refresh(true)}catch(x){}toast('Up to date')}i.className='ptr';i.style.transform=''},{passive:true});})();
-function render(){const a=$('#app');if(!sess)return a.innerHTML=authView();
+const TYPING=()=>{const e=document.activeElement;if(!e||!e.closest||!e.closest('#app'))return false;if(e.tagName==='TEXTAREA')return true;return e.tagName==='INPUT'&&!['checkbox','radio','file','button','submit'].includes(e.type)};
+let renderLater=false;document.addEventListener('focusout',()=>setTimeout(()=>{if(renderLater&&!TYPING()){renderLater=false;render()}},0));
+function render(force){if(!force&&sess&&TYPING()){renderLater=true;return}renderLater=false;render0()}
+function render0(){const a=$('#app');if(!sess)return a.innerHTML=authView();
  if(blocked)return a.innerHTML=`<main class="center"><div class="card" style="text-align:center"><div style="font-size:40px">⏸️</div><h1>Access paused</h1><p class="sub">Your company's access to Cert Compliance is turned off right now. Your data is safe. Please contact your company Admin.</p><button class="btn sec" onclick="signOut()">Sign out</button></div></main>`;
  if(V.tab==='reset')return a.innerHTML=authView();
  const role=myRole(),c=comp();let tabs=[];
@@ -156,7 +160,7 @@ async function busy(el,fn){if(el.disabled)return;el.disabled=true;const t=el.tex
 /* ---------- jobs ---------- */
 function jobsView(){const s=(V.q||'').toLowerCase(),list=D.jobs.filter(j=>!s||[j.site,j.type,j.customer].join(' ').toLowerCase().includes(s)),nc=D.jobs.filter(jobBad).length;
  return `<div class="row" style="align-items:center"><h1>Jobs</h1><span style="flex:none">${nc?`<span class="pill r">${nc} need attention</span>`:D.jobs.length?'<span class="pill g">All compliant</span>':''}</span></div>
- <button class="btn" onclick="go('newjob')">＋ New job</button><input placeholder="Search jobs…" value="${esc(V.q||'')}" oninput="V.q=this.value;const p=this.selectionStart;render();const i=$('main input');i.focus();i.setSelectionRange(p,p)">
+ <button class="btn" onclick="go('newjob')">＋ New job</button><input placeholder="Search jobs…" value="${esc(V.q||'')}" oninput="V.q=this.value;const p=this.selectionStart;render(true);const i=$('main input');i.focus();i.setSelectionRange(p,p)">
  <div class="card" style="padding:4px 14px">${list.map(j=>`<div class="item" onclick="go('job',{id:'${j.id}'})"><div class="grow"><div class="t" style="font-size:17px">${esc(j.site||j.type||'Untitled job')}</div><div class="sub">${esc([j.site?j.type:'',j.customer].filter(Boolean).join(' · '))} · ${j.crew.length} crew</div></div>${jpill(j)}</div>`).join('')||'<p class="sub">No jobs yet. Tap “New job”.</p>'}</div>`}
 function newJobView(){const o=(arr,ph)=>`<option value="">${ph}</option>`+arr.map(x=>`<option>${esc(x.name)}</option>`).join('');
  return `<button class="back" onclick="goBack('jobs')">← Jobs</button><div class="card"><h2>New job</h2><label>Site<input id="js" placeholder="Site ID, e.g. A1N0001"></label><label>Job type<select id="jt" onchange="prevNew()">${o(D.types,'Choose a job type')}</select></label><label>Customer<select id="jcu" onchange="prevNew()">${o(D.custs,'No customer')}</select></label><div id="prev"></div><button class="btn" onclick="busy(this,addJob)">Create job</button></div>`}
@@ -188,17 +192,17 @@ function sugShow(id){const j=job(id),s=($('#crewIn').value||'').toLowerCase(),c=
  G.r.sort((a,b)=>fit(j,b[0])-fit(j,a[0]));
  $('#sug').innerHTML=c.length?`<div class="sug">${G.r.length?'<div class="h">Ready</div>'+G.r.map(row).join(''):''}${G.m.length?'<div class="h">Missing certs</div>'+G.m.map(row).join(''):''}${G.o.length?'<div class="h">On another job</div>'+G.o.map(row).join(''):''}</div>`:'<p class="sub">No matches. Add people on the People tab.</p>'}
 async function crewAdd(id,pid){const oj=jobOf(pid);if(oj&&oj.id!==id){if(!confirm(`${person(pid).name} is on ${oj.site||oj.type}. Move them here?`))return;oj.crew=oj.crew.filter(x=>x!==pid);saveRow('jobs',oj.id,['crew'])}
- const j=job(id);if(!j.crew.includes(pid))j.crew=[...j.crew,pid];render();saveRow('jobs',id,['crew']);const i=$('#crewIn');if(i){i.focus();sugShow(id)}}
+ const j=job(id);if(!j.crew.includes(pid))j.crew=[...j.crew,pid];render(true);saveRow('jobs',id,['crew']);const i=$('#crewIn');if(i){i.focus();sugShow(id)}}
 
 /* ---------- people ---------- */
 function peopleView(){const s=(V.q||'').toLowerCase(),l=D.people.filter(p=>p.name.toLowerCase().includes(s));
  return `<h1>People</h1><div class="row"><input id="np" placeholder="New person's name" style="flex:2"><button class="btn" style="flex:1;margin-top:4px;height:44px" onclick="busy(this,addPerson)">Add</button></div>
- <input placeholder="Search people…" value="${esc(V.q||'')}" oninput="V.q=this.value;const p=this.selectionStart;render();const i=document.querySelectorAll('main input')[1];i.focus();i.setSelectionRange(p,p)">
+ <input placeholder="Search people…" value="${esc(V.q||'')}" oninput="V.q=this.value;const p=this.selectionStart;render(true);const i=document.querySelectorAll('main input')[1];i.focus();i.setSelectionRange(p,p)">
  <div class="card" style="padding:4px 14px">${l.map(p=>{const j=jobOf(p.id);return `<div class="item" onclick="go('person',{id:'${p.id}'})"><div class="grow"><div class="t">${esc(p.name)} ${posChip(p.position)}</div><div class="sub">${j?'On '+esc(j.site||j.type):'Available'}${p.user_id?' · has login':''}</div></div>${personSum(p)}</div>`}).join('')||'<p class="sub">No people yet.</p>'}</div>`}
 async function addPerson(){const n=$('#np').value.trim();if(!n)return toast('Enter a name');const [p]=await q(sb.from('people').insert({company_id:cid,name:n}).select(),'Added — now tick their certs');await load();go('person',{id:p.id})}
 function certRows(pid,ed,techUpload){return D.certs.map(c=>{const h=pc(pid,c.id),s=h?status(pid,c.id):'';
  return `<div class="cb"><input type="checkbox" ${h?'checked':''} ${ed?'':'disabled'} onchange="pcTog('${pid}','${c.id}',this.checked)"><div class="grow"><div class="t">${esc(c.name)} ${s==='expired'?'<span class="pill r">Expired</span>':s==='soon'?'<span class="pill a">Expires soon</span>':h?'<span class="pill g">Current</span>':''}</div>
- ${h?`<div class="dates"><label>Acquired<input type="date" value="${h.acquired||''}" ${ed&&!String(h.id).startsWith('tmp')?'':'disabled'} onchange="pcDate('${h.id}','acquired',this.value,'${c.id}')"></label><label>Expires${c.valid_n?` <span class="sub">(${c.valid_n} ${c.valid_u})</span>`:''}<input type="date" value="${h.expires||''}" ${ed&&!String(h.id).startsWith('tmp')?'':'disabled'} onchange="pcDate('${h.id}','expires',this.value)"></label></div>
+ ${h?`<div class="dates"><label>Acquired<input type="date" value="${h.acquired||''}" ${ed&&!String(h.id).startsWith('tmp')?'':'disabled'} onchange="pcDate('${h.id}','acquired',this.value,'${c.id}')"></label><label>Expires${c.valid_n?` <span class="sub">(${c.valid_n} ${c.valid_u})</span>`:''}<input type="date" data-exp="${h.id}" value="${h.expires||''}" ${ed&&!String(h.id).startsWith('tmp')?'':'disabled'} onchange="pcDate('${h.id}','expires',this.value)"></label></div>
  ${(ed||techUpload)&&!String(h.id).startsWith('tmp')?`<label class="lnk" style="display:inline-block;cursor:pointer">📷 ${h.photo_path?'Replace photo':'Upload photo'}<input type="file" accept="image/*" style="display:none" onchange="upPhoto('${h.id}','${pid}',this.files[0])"></label>`:''}${h.photo_path?` <button class="lnk" onclick="viewPhoto('${h.photo_path}',this)">View photo</button>`:''}`:''}</div></div>`}).join('')||'<p class="sub">No certs set up yet (Setup tab).</p>'}
 function personView(){const p=person(V.id);if(!p)return peopleView();const ed=canEdit(),j=jobOf(p.id);
  return `<button class="back" onclick="goBack('people')">← People</button><div class="card"><label>Name<input value="${esc(p.name)}" onchange="pSet('${p.id}',{name:this.value.trim()})"></label>
@@ -212,7 +216,9 @@ async function pcTog(pid,c,on){const k='pc:'+pid+':'+c;if(!SQ[k]){const r=pc(pid
  queue(k,async()=>{const s=SQ[k],want=!!pc(pid,c);if(want&&!s.srv){const {data,error}=await sb.from('person_certs').insert({company_id:cid,person_id:pid,cert_id:c}).select();if(error)return error;s.srv=data[0].id;const r=pc(pid,c);if(r&&String(r.id).startsWith('tmp')){r.id=data[0].id;if(!pendingN()||Object.keys(SQ).length===1)setTimeout(()=>{if(V.tab==='person'&&Date.now()-lastTap>500)render()},0)}}
   else if(!want&&s.srv){const {error}=await sb.from('person_certs').delete().eq('id',s.srv);if(error)return error;s.srv=null}return null})}
 function addValid(d,n,u){const x=new Date(d+'T12:00');if(u==='months')x.setMonth(x.getMonth()+n);else if(u==='days')x.setDate(x.getDate()+n);else x.setFullYear(x.getFullYear()+n);return x.toISOString().slice(0,10)}
-async function pcDate(id,f,v,c){const patch={[f]:v||null};if(f==='acquired'&&v&&c){const ce=cert(c);if(ce&&ce.valid_n)patch.expires=addValid(v,ce.valid_n,ce.valid_u||'years')}await q(sb.from('person_certs').update(patch).eq('id',id),patch.expires&&f==='acquired'?'Expiry filled in':'Saved');await load();render()}
+function pcDate(id,f,v,c){const r=D.pcs.find(x=>x.id===id);if(!r)return;r[f]=v||null;let msg='Saved';
+ if(f==='acquired'&&v&&c){const ce=cert(c);if(ce&&ce.valid_n){r.expires=addValid(v,ce.valid_n,ce.valid_u||'years');const ex=document.querySelector(`input[data-exp="${id}"]`);if(ex)ex.value=r.expires;msg='Expiry filled in'}}
+ renderLater=true;lastTap=Date.now();queue('pcd:'+id,async()=>{const row=D.pcs.find(x=>x.id===id);if(!row)return null;const {error}=await sb.from('person_certs').update({acquired:row.acquired,expires:row.expires}).eq('id',id);if(!error)toast(msg);return error})}
 async function upPhoto(id,pid,f){if(!f)return;const path=`${cid}/${pid}/${id}-${Date.now()}.${(f.name.split('.').pop()||'jpg').toLowerCase()}`;toast('Uploading…');
  await q(sb.storage.from('cert-photos').upload(path,f,{upsert:true}));await q(sb.from('person_certs').update({photo_path:path}).eq('id',id),'Photo saved');await load();render()}
 async function viewPhoto(path,el){const {data}=await q(sb.storage.from('cert-photos').createSignedUrl(path,300));el.outerHTML=`<img class="photo" src="${data.signedUrl}">`}
