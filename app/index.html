@@ -73,7 +73,7 @@ body.hasdock{padding-bottom:calc(var(--navh,0px) + 90px)}body.sheetopen{overflow
 .pill.y{background:#fef3c7;color:#92400e}.item.bk .add{margin-left:6px}</style></head><body><div id="app"><main class="center"><div class="card">Loading…</div></main></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-const BUILD='20261013124500';
+const BUILD='20261013130000';
 async function checkVer(){try{const r=await fetch('version.txt?'+Date.now(),{cache:'no-store'});if(!r.ok)return;const v=(await r.text()).trim();
  if(v&&v!==BUILD&&typeof TYPING==='function'&&TYPING()){document.addEventListener('focusout',()=>setTimeout(checkVer,300),{once:true});return}
  if(v&&v!==BUILD&&sessionStorage.getItem('cc.app.reloaded')!==v){sessionStorage.setItem('cc.app.reloaded',v);const u=new URLSearchParams(location.search);u.set('v',v);location.replace(location.pathname+'?'+u.toString()+location.hash)}}catch(e){}}
@@ -88,7 +88,7 @@ function newDept(k,btn){chipPick(btn,k)}
 function jobDept(k){const j=job(V.id);jobSet(j.id,{department:j.department===k?null:k})}
 function personDept(k){const p=person(V.id);pSet(p.id,{department:p.department===k?null:k})}
 function invDept(k,btn){chipPick(btn,k)}
-const POS=['Foreman','Top Hand','Tower Tech III','Tower Tech IV','CM','PM'];
+const POS=['Foreman','Top Hand','Tower Tech III','Tower Tech IV','CM','PM','Apprentice','Journeyman'];
 const sb=supabase.createClient(SB_URL,SB_ANON);
 let sess=null,me=null,owner=false,companies=[],cid=null,D=null,V={tab:'jobs'},blocked=false,authMode='in',chan=null,crew=[],SOON=30;
 const $=s=>document.querySelector(s),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
