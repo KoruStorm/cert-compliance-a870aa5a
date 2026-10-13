@@ -11,6 +11,7 @@ h1{font-size:24px;margin:2px 0 4px}h2{font-size:16px;margin:0 0 10px}.sub{color:
 .item{display:flex;align-items:center;gap:10px;padding:11px 2px;border-bottom:1px solid var(--line);cursor:pointer}.item:last-child{border:0}.t{font-weight:600}.grow{flex:1;min-width:0}
 .pill{display:inline-flex;padding:3px 10px;border-radius:999px;font-size:12px;font-weight:700;white-space:nowrap}.g{background:var(--gbg);color:#166534}.r{background:var(--rbg);color:#991b1b}.a{background:var(--abg);color:#92400e}.n{background:#eef2f7;color:var(--ink2)}.b{background:#dbeafe;color:#1e40af}
 .btn{font:inherit;font-size:15px;font-weight:600;padding:11px 14px;border:0;border-radius:8px;background:var(--pri);color:#fff;display:flex;justify-content:center;width:100%;cursor:pointer;margin-top:4px}.btn.sec{background:#e8edf4;color:var(--ink)}.btn.red{background:#fee2e2;color:#991b1b}.btn:disabled{opacity:.5}
+.phs{display:flex;gap:8px;flex-wrap:wrap;margin:2px 0 10px}.pht{width:72px;height:54px;border-radius:8px;object-fit:cover;background:#e8edf4;border:1px solid var(--line);cursor:pointer;display:block}.phv{position:fixed;inset:0;z-index:60;background:#0f172a;color:#fff;display:flex;flex-direction:column}.phv img{flex:1;min-height:0;object-fit:contain;width:100%;padding:8px}.phv .bar{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;padding-top:max(14px,env(safe-area-inset-top))}.phv .bar button{background:none;border:0;color:#fff;font:inherit;font-size:17px}.phv .foot{background:#1e293b;padding:16px 18px;padding-bottom:max(18px,env(safe-area-inset-bottom))}
 .lnk{background:none;border:0;color:var(--pri);font:inherit;font-weight:600;padding:6px 0;cursor:pointer}
 input,select,textarea{font:inherit;font-size:16px;width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:8px;margin:4px 0 12px;background:#fff;color:var(--ink)}label{font-size:13px;font-weight:600;color:var(--ink2);display:block}
 .row{display:flex;gap:8px}.row>*{flex:1}
@@ -72,7 +73,7 @@ body.hasdock{padding-bottom:calc(var(--navh,0px) + 90px)}body.sheetopen{overflow
 .pill.y{background:#fef3c7;color:#92400e}.item.bk .add{margin-left:6px}</style></head><body><div id="app"><main class="center"><div class="card">Loading…</div></main></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-const BUILD='20261013040000';
+const BUILD='20261013043000';
 async function checkVer(){try{const r=await fetch('version.txt?'+Date.now(),{cache:'no-store'});if(!r.ok)return;const v=(await r.text()).trim();
  if(v&&v!==BUILD&&typeof TYPING==='function'&&TYPING()){document.addEventListener('focusout',()=>setTimeout(checkVer,300),{once:true});return}
  if(v&&v!==BUILD&&sessionStorage.getItem('cc.app.reloaded')!==v){sessionStorage.setItem('cc.app.reloaded',v);const u=new URLSearchParams(location.search);u.set('v',v);location.replace(location.pathname+'?'+u.toString()+location.hash)}}catch(e){}}
@@ -132,6 +133,7 @@ function authView(){if(V.tab==='reset')return `<main class="center"><div class="
 async function load(){await drain();const f=t=>sb.from(t).select('*').eq('company_id',cid);const role=myRole();
  const [certs,types,custs,people,pcs,jobs]=await Promise.all(['certs','job_types','customers','people','person_certs','jobs'].map(t=>q(f(t))));
  D={certs:certs.sort((a,b)=>a.name.localeCompare(b.name)),types,custs,people:people.sort((a,b)=>a.name.localeCompare(b.name)),pcs,jobs:jobs.sort((a,b)=>(a.site||'').localeCompare(b.site||'')),profiles:[],invites:[],audit:[]};
+ D.photos=(await sb.from('cert_photos').select('*').eq('company_id',cid).order('created_at')).data||[];
  if(role==='admin'||role==='scheduler'){D.profiles=await q(sb.from('profiles').select('*').eq('company_id',cid));D.audit=await q(sb.from('audit_log').select('*').eq('company_id',cid).order('at',{ascending:false}).limit(200))}
  if(role==='admin')D.invites=await q(sb.from('pending_invites').select('*').eq('company_id',cid));
  if(role==='tech'){crew=(await q(sb.rpc('my_crew')))||[]}}
@@ -163,13 +165,13 @@ const crewSort=a=>a.slice().sort((x,y)=>(x.position==='Foreman'?0:1)-(y.position
 let depth=0;function go(tab,extra,replace){V=Object.assign({tab},extra||{});document.body.classList.remove('sheetopen');const st={V,cid};if(replace)history.replaceState(st,'');else{history.pushState(st,'');depth++}render(true);scrollTo(0,0)}
 const homeTab=()=>owner&&!cid?'owner':myRole()==='tech'?'mine':'jobs';
 function goBack(fb,extra){if(V.sheet)return closeSheet();if(depth>0){history.back()}else go(fb||homeTab(),extra||null,true)}
-addEventListener('popstate',async e=>{const st=e.state;if(!st||!sess)return;depth=Math.max(0,depth-1);V=st.V;
+addEventListener('popstate',async e=>{const st=e.state;if(!st||!sess)return;depth=Math.max(0,depth-1);const pv=V;V=st.V;if(pv&&pv.sheet&&!V.sheet&&pv.tab===V.tab&&pv.id===V.id)V.ex=pv.ex;
  if(owner&&st.cid!==cid){cid=st.cid;if(cid){localStorage.setItem('cc.app.ownerCid',cid);await load()}else{localStorage.removeItem('cc.app.ownerCid');D=null}}
  if(V.tab==='company')await loadCoInv(V.id);render(true);scrollTo(0,0)});
 addEventListener('pagehide',()=>{Object.keys(SQ).forEach(k=>{if(SQ[k].t)flush(k)})});document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')Object.keys(SQ).forEach(k=>{if(SQ[k].t)flush(k)})});
 /* pull to refresh */
 (()=>{let y0=null,dy=0,el=null;const ind=()=>{if(!el){el=document.createElement('div');el.id='ptr';document.body.appendChild(el)}return el};
- addEventListener('touchstart',e=>{if(!sess||scrollY>0||e.touches.length>1||e.target.closest('input,textarea,select,label,.sug,.sheet,.dim')||TYPING())return y0=null;y0=e.touches[0].clientY;dy=0},{passive:true});
+ addEventListener('touchstart',e=>{if(!sess||scrollY>0||e.touches.length>1||e.target.closest('input,textarea,select,label,.sug,.sheet,.dim,.phv')||TYPING())return y0=null;y0=e.touches[0].clientY;dy=0},{passive:true});
  addEventListener('touchmove',e=>{if(y0==null)return;dy=e.touches[0].clientY-y0;if(dy<=0||scrollY>0){ind().style.cssText='';return}const i=ind();i.className='ptr show';i.style.transform=`translate(-50%,${Math.min(dy,110)*0.6}px)`;i.textContent=dy>70?'↻ Release to refresh':'↓ Pull to refresh'},{passive:true});
  addEventListener('touchend',async()=>{if(y0==null)return;const d=dy;y0=null;dy=0;const i=ind();if(d>70){i.className='ptr show';i.style.transform='translate(-50%,40px)';i.innerHTML='<span class="spin"></span> Refreshing…';checkVer();try{await refresh(true)}catch(x){}toast('Up to date')}i.className='ptr';i.style.transform=''},{passive:true});})();
 const TYPING=()=>{const e=document.activeElement;if(!e||!e.closest||!e.closest('#app'))return false;if(e.tagName==='TEXTAREA')return true;return e.tagName==='INPUT'&&!['checkbox','radio','file','button','submit'].includes(e.type)};
@@ -186,9 +188,9 @@ function render0(){const a=$('#app');if(!sess)return a.innerHTML=authView();
  const views={owner:ownerView,company:companyView,invco:inviteCoView,jobs:jobsView,job:jobView,newjob:newJobView,people:peopleView,certprob:certProbView,person:personView,setup:setupView,list:listView,admin:adminView,mine:mineView,mycerts:myCertsView,account:accountView,invready:inviteReadyView,certs:certsView,lists:listsView,import:importView,backup:backupView,user:userView,invite:inviteView,activity:activityView};
  const top=V.tab.startsWith('own')||['company','invco'].includes(V.tab)||(V.tab==='invready'&&owner&&!cid)||(owner&&!cid)?'owner':({job:'jobs',newjob:'jobs',person:'people',certprob:'people',list:'setup',lists:'setup',certs:'setup',import:'setup',backup:owner&&!cid?'owner':'setup',user:'admin',invite:'admin',activity:'admin'}[V.tab]||V.tab);
  a.innerHTML=`<header><div class="logo">${owner&&!cid?'Owner dashboard':esc(c.name||'Cert Compliance')}<small>${owner?'Platform owner'+(cid?' · viewing as Admin':''):esc(cap(role))+(me&&me.position?' · '+esc(me.position):'')}</small></div><button class="av" onclick="go('account')" aria-label="Account">${esc(ini((me&&me.name)||sess.user.email))}</button></header>
- <main>${(views[V.tab]||jobsView)()}</main>${tabs.length>1?`<nav class="bt">${tabs.map(t=>`<button class="${top===t[0]?'on':''}" onclick="${t[0]==='owner'?'ownerHome()':`go('${t[0]}')`}"><i>${t[1]}</i>${t[2]}</button>`).join('')}</nav>`:''}`
+ <main>${(views[V.tab]||jobsView)()}</main>${tabs.length>1?`<nav class="bt">${tabs.map(t=>`<button class="${top===t[0]?'on':''}" onclick="${t[0]==='owner'?'ownerHome()':`go('${t[0]}')`}"><i>${t[1]}</i>${t[2]}</button>`).join('')}</nav>`:''}${V.sheet==='photo'?photoViewer():''}`
  postRender()}
-function postRender(){const nav=$('nav.bt'),d=$('.dock');document.documentElement.style.setProperty('--navh',(nav?nav.offsetHeight:0)+'px');document.body.classList.toggle('hasdock',!!d);document.body.classList.toggle('sheetopen',!!$('#sheet'));fitSheet();syncNote()}
+function postRender(){fillThumbs().catch(()=>{});const nav=$('nav.bt'),d=$('.dock');document.documentElement.style.setProperty('--navh',(nav?nav.offsetHeight:0)+'px');document.body.classList.toggle('hasdock',!!d);document.body.classList.toggle('sheetopen',!!$('#sheet'));fitSheet();syncNote()}
 function fitSheet(){const sh=$('#sheet'),vv=window.visualViewport;if(!sh||!vv||!sh.classList.contains('sheet'))return;const kb=Math.max(0,innerHeight-vv.height-vv.offsetTop);sh.style.bottom=kb+'px'}
 if(window.visualViewport){visualViewport.addEventListener('resize',fitSheet);visualViewport.addEventListener('scroll',fitSheet)}
 const cap=s=>s?s[0].toUpperCase()+s.slice(1):'';const ini=s=>String(s).split(/[\s@.]+/).filter(Boolean).slice(0,2).map(x=>x[0].toUpperCase()).join('');
@@ -348,8 +350,8 @@ function certRows(pid,ed,techUpload){const held=D.certs.filter(c=>pc(pid,c.id));
  return held.map(c=>{const h=pc(pid,c.id),k='c:'+c.id,o=V.ex===k,tmp=String(h.id).startsWith('tmp'),dis=ed&&!tmp?'':'disabled';
  return `<div class="crow" role="button" aria-expanded="${o}" onclick="tgl('${k}')"><div class="grow"><div class="t">${esc(c.name)}</div><div class="sub">${h.expires?'Expires '+fmt(h.expires):'No expiry'}</div></div>${certPill(pid,c.id,h)}<span class="chev">${o?'⌄':'›'}</span></div>
  ${o?`<div class="exp"><div class="row"><label>Acquired<input type="date" value="${h.acquired||''}" ${dis} onchange="pcDate('${h.id}','acquired',this.value,'${c.id}')"></label><label>Expires${c.valid_n?` <span class="sub">(${c.valid_n} ${c.valid_u})</span>`:''}<input type="date" data-exp="${h.id}" value="${h.expires||''}" ${dis} onchange="pcDate('${h.id}','expires',this.value)"></label></div>
- ${h.photo_path?`<button class="lnk" onclick="viewPhoto('${h.photo_path}',this)">View photo</button>`:''}
- <div class="row">${(ed||techUpload)&&!tmp?`<label class="btn sec" style="margin:0;cursor:pointer">📷 ${h.photo_path?'Replace photo':'Add photo'}<input type="file" accept="image/*" style="display:none" onchange="upPhoto('${h.id}','${pid}',this.files[0])"></label>`:''}${ed?`<button class="btn sec" style="margin:0;color:#991b1b" onclick="pcRemove('${pid}','${c.id}')">Remove</button>`:''}</div></div>`:''}`}).join('')}
+ ${tmp?'':phStrip(h.id)}
+ <div class="row">${(ed||techUpload)&&!tmp?phAdd(h.id,pid,'btn sec','margin:0'):''}${ed?`<button class="btn sec" style="margin:0;color:#991b1b" onclick="pcRemove('${pid}','${c.id}')">Remove</button>`:''}</div></div>`:''}`}).join('')}
 function pcRemove(pid,c){if(!confirm(`Remove ${cert(c).name} from ${person(pid).name}?`))return;V.ex=null;pcTog(pid,c,false)}
 function accessCard(p){const pr=p.user_id&&D.profiles.find(x=>x.id===p.user_id),self=p.user_id===sess.user.id&&!owner;
  if(!pr){const inv=D.invites.find(i=>i.person_id===p.id);return `<div class="card"><div class="sh"><h2>App access</h2></div><p class="sub" style="margin:0 0 10px">${inv?'Invited — waiting for them to sign up ('+esc(inv.email)+').':'No login yet.'}</p>${inv?'':`<button class="btn sec" style="margin:0" onclick="go('invite',{pid:'${p.id}'})">Invite to the app</button>`}</div>`}
@@ -378,9 +380,28 @@ function addValid(d,n,u){const x=new Date(d+'T12:00');if(u==='months')x.setMonth
 function pcDate(id,f,v,c){const r=D.pcs.find(x=>x.id===id);if(!r)return;r[f]=v||null;let msg='Saved';
  if(f==='acquired'&&v&&c){const ce=cert(c);if(ce&&ce.valid_n){r.expires=addValid(v,ce.valid_n,ce.valid_u||'years');const ex=document.querySelector(`input[data-exp="${id}"]`);if(ex)ex.value=r.expires;msg='Expiry filled in'}}
  renderLater=true;lastTap=Date.now();queue('pcd:'+id,async()=>{const row=D.pcs.find(x=>x.id===id);if(!row)return null;const {error}=await sb.from('person_certs').update({acquired:row.acquired,expires:row.expires}).eq('id',id);if(!error)toast(msg);return error})}
-async function upPhoto(id,pid,f){if(!f)return;const path=`${cid}/${pid}/${id}-${Date.now()}.${(f.name.split('.').pop()||'jpg').toLowerCase()}`;toast('Uploading…');
- await q(sb.storage.from('cert-photos').upload(path,f,{upsert:true}));await q(sb.from('person_certs').update({photo_path:path}).eq('id',id),'Photo saved');await load();render()}
-async function viewPhoto(path,el){const {data}=await q(sb.storage.from('cert-photos').createSignedUrl(path,300));el.outerHTML=`<img class="photo" src="${data.signedUrl}">`}
+const phOf=id=>(D.photos||[]).filter(x=>x.person_cert_id===id);
+function phStrip(id){const l=phOf(id);return l.length?`<div class="sub" style="margin:4px 0 6px">Photos · ${l.length}</div><div class="phs">${l.map((x,i)=>`<img class="pht" alt="Cert photo" data-ph="${esc(x.path)}" onclick="event.stopPropagation();openPhoto('${id}',${i})">`).join('')}</div>`:''}
+function phAdd(id,pid,cls,st){return `<label class="${cls}" style="${st};cursor:pointer" onclick="event.stopPropagation()">📷 Add photo<input type="file" accept="image/*" multiple style="display:none" onchange="upPhotos('${id}','${pid}',this)"></label>`}
+const PHU={};async function fillThumbs(){const els=[...document.querySelectorAll('img[data-ph]')];if(!els.length)return;const now=Date.now(),need=[...new Set(els.map(e=>e.dataset.ph).filter(p=>!PHU[p]||PHU[p].t<now))];
+ if(need.length){const {data}=await sb.storage.from('cert-photos').createSignedUrls(need,3600);(data||[]).forEach(d=>{if(d.signedUrl)PHU[d.path]={u:d.signedUrl,t:now+3300e3}})}
+ document.querySelectorAll('img[data-ph]').forEach(e=>{const c=PHU[e.dataset.ph];if(c&&e.getAttribute('src')!==c.u)e.src=c.u})}
+async function shrink(f){try{const bm=await createImageBitmap(f,{imageOrientation:'from-image'});const sc=Math.min(1,1600/Math.max(bm.width,bm.height)),cv=document.createElement('canvas');cv.width=Math.round(bm.width*sc);cv.height=Math.round(bm.height*sc);cv.getContext('2d').drawImage(bm,0,0,cv.width,cv.height);return await new Promise(r=>cv.toBlob(r,'image/jpeg',0.82))}catch(x){
+ const u=URL.createObjectURL(f);const im=await new Promise((r,j)=>{const i=new Image();i.onload=()=>r(i);i.onerror=j;i.src=u});const sc=Math.min(1,1600/Math.max(im.naturalWidth,im.naturalHeight)),cv=document.createElement('canvas');cv.width=Math.round(im.naturalWidth*sc);cv.height=Math.round(im.naturalHeight*sc);cv.getContext('2d').drawImage(im,0,0,cv.width,cv.height);URL.revokeObjectURL(u);return await new Promise(r=>cv.toBlob(r,'image/jpeg',0.82))}}
+async function upPhotos(id,pid,inp){const fs=[...inp.files];inp.value='';if(!fs.length)return;toast(fs.length>1?`Uploading ${fs.length} photos…`:'Uploading…');let n=0;
+ for(const f of fs){try{const b=await shrink(f);const path=`${cid}/${pid}/${id}-${Date.now()}-${Math.random().toString(36).slice(2,6)}.jpg`;
+  const {error:e1}=await sb.storage.from('cert-photos').upload(path,b,{contentType:'image/jpeg'});if(e1)throw e1;
+  const {error:e2}=await sb.from('cert_photos').insert({company_id:cid,person_cert_id:id,person_id:pid,path});if(e2){await sb.storage.from('cert-photos').remove([path]);throw e2}n++}catch(x){console.warn(x);toast('A photo couldn\u2019t be saved — try again')}}
+ if(n)toast(n>1?n+' photos saved':'Photo saved');await load();render()}
+function openPhoto(id,i){V.ph={pc:id,i};openSheet('photo')}
+function photoViewer(){const l=phOf(V.ph&&V.ph.pc),i=Math.min(V.ph.i,l.length-1),x=l[i];if(!x)return '';const h=D.pcs.find(r=>r.id===x.person_cert_id)||{},c=cert(h.cert_id)||{},pe=person(x.person_id)||{};
+ return `<div class="phv" role="dialog" aria-label="Photo"><div class="bar"><button onclick="closeSheet()">✕ Close</button><span class="sub" style="color:#cbd5e1">${l.length>1?`${i+1} of ${l.length}`:''}</span></div>
+ <img alt="Cert photo" data-ph="${esc(x.path)}" ${l.length>1?`onclick="V.ph.i=(${i}+1)%${l.length};render(true)"`:''}>
+ <div class="foot"><div style="font-weight:700;font-size:18px">${esc(c.name||'Cert')}</div><div style="color:#cbd5e1;font-size:14px;margin-top:2px">${esc(pe.name||'')} · Added ${fmt(x.created_at.slice(0,10))}${x.created_by_name?' by '+esc(x.created_by_name):''}</div>
+ ${l.length>1?`<div class="row" style="margin-top:12px"><button class="btn" style="margin:0;background:#334155" onclick="V.ph.i=(${i}+${l.length}-1)%${l.length};render(true)">‹ Prev</button><button class="btn" style="margin:0;background:#334155" onclick="V.ph.i=(${i}+1)%${l.length};render(true)">Next ›</button></div>`:''}
+ ${canEdit()?`<button class="btn" style="margin-top:12px;background:#334155;color:#fecaca" onclick="phDel('${x.id}')">Delete photo</button>`:''}</div></div>`}
+async function phDel(id){const x=(D.photos||[]).find(p=>p.id===id);if(!x||!confirm('Delete this photo?'))return;await q(sb.from('cert_photos').delete().eq('id',id));await sb.storage.from('cert-photos').remove([x.path]);toast('Photo deleted');
+ D.photos=D.photos.filter(p=>p.id!==id);if(!phOf(V.ph.pc).length)closeSheet();else{V.ph.i=0;render(true)}}
 
 /* ---------- setup ---------- */
 function setupView(){const n=(a,s,p)=>`${a.length} ${a.length==1?s:p}`;return `<h1>Setup</h1><div class="sub" style="margin:-6px 0 12px">What each job needs. Tap a row to edit.</div>
@@ -485,11 +506,11 @@ function mineView(){const pid=D.people[0]&&D.people[0].id,j=D.jobs[0];
  ${foremanCard(crew.filter(c=>c.position==='Foreman'),f=>f.phone)}${locCard(j,false,true)}${V.sheet==='go'?goSheet(j):''}<div class="card"><h2>My crew (${crew.length})</h2>${crew.map(c=>`<div class="item" style="cursor:default"><div class="grow"><div class="t">${esc(c.name)}${c.person_id===pid?' (you)':''} ${posChip(c.position)}</div></div>${c.ready?'<span class="pill g">Ready</span>':'<span class="pill r">Missing cert</span>'}</div>`).join('')}</div>`:'<div class="card"><h2>My job</h2><p class="sub">You\u2019re not assigned to a job right now.</p></div>'}
  <div class="card" onclick="go('mycerts')" style="cursor:pointer"><h2>My certs ›</h2><div class="sub">${my.length} on file${my.filter(x=>status(pid,x.cert_id)==='soon').length?' · some expiring soon':''}</div></div>`}
 function myCertsView(){const p=D.people[0];if(!p)return mineView();const my=D.certs.filter(c=>pc(p.id,c.id));
- return `<h1>My certs</h1><p class="sub">Dates are set by your Scheduler. You can upload a photo of each card.</p><div class="card">${my.map(c=>{const h=pc(p.id,c.id),s=status(p.id,c.id);return `<div class="cb"><div class="grow"><div class="t">${esc(c.name)} ${s==='expired'?'<span class="pill r">Expired</span>':s==='soon'?'<span class="pill a">Expires soon</span>':'<span class="pill g">Current</span>'}</div><div class="sub">${h.acquired?'Acquired '+fmt(h.acquired):''}${h.expires?' · Expires '+fmt(h.expires):' · No expiry'}</div>
- <label class="lnk" style="display:inline-block;cursor:pointer">📷 ${h.photo_path?'Replace photo':'Upload photo'}<input type="file" accept="image/*" style="display:none" onchange="upPhoto('${h.id}','${p.id}',this.files[0])"></label>${h.photo_path?` <button class="lnk" onclick="viewPhoto('${h.photo_path}',this)">View photo</button>`:''}</div></div>`}).join('')||'<p class="sub">No certs on file yet.</p>'}</div>`}
+ return `<h1>My certs</h1><p class="sub">Dates are set by your Scheduler. You can add photos of each card.</p><div class="card">${my.map(c=>{const h=pc(p.id,c.id),s=status(p.id,c.id);return `<div class="cb"><div class="grow"><div class="t">${esc(c.name)} ${s==='expired'?'<span class="pill r">Expired</span>':s==='soon'?'<span class="pill a">Expires soon</span>':'<span class="pill g">Current</span>'}</div><div class="sub">${h.acquired?'Acquired '+fmt(h.acquired):''}${h.expires?' · Expires '+fmt(h.expires):' · No expiry'}</div>
+ <div style="margin-top:6px">${phStrip(h.id)}</div>${phAdd(h.id,p.id,'lnk','display:inline-block')}</div></div>`}).join('')||'<p class="sub">No certs on file yet.</p>'}</div>`}
 
 /* ---------- backup & restore ---------- */
-const BKN='Backups include everything except cert photo files themselves.';
+const BKN='Backups include everything, including which photos belong to each cert. The photo image files stay safely in storage and aren’t inside the backup file.';
 const bkCo=()=>V.id||cid;const bkName=id=>(companies.find(c=>c.id===id)||{}).name||'Company';
 const bkFile=n=>`CertCompliance-${String(n).replace(/[^A-Za-z0-9]+/g,'-').replace(/^-|-$/g,'')||'company'}-${today()}.json`;
 const bkCounts=d=>({certs:(d.certs||[]).length,people:(d.people||[]).length,jobs:(d.jobs||[]).length,person_certs:(d.person_certs||[]).length,job_types:(d.job_types||[]).length,customers:(d.customers||[]).length});
