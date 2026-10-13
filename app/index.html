@@ -72,7 +72,7 @@ body.hasdock{padding-bottom:calc(var(--navh,0px) + 90px)}body.sheetopen{overflow
 .pill.y{background:#fef3c7;color:#92400e}.item.bk .add{margin-left:6px}</style></head><body><div id="app"><main class="center"><div class="card">Loading…</div></main></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-const BUILD='20261013023000';
+const BUILD='20261013040000';
 async function checkVer(){try{const r=await fetch('version.txt?'+Date.now(),{cache:'no-store'});if(!r.ok)return;const v=(await r.text()).trim();
  if(v&&v!==BUILD&&typeof TYPING==='function'&&TYPING()){document.addEventListener('focusout',()=>setTimeout(checkVer,300),{once:true});return}
  if(v&&v!==BUILD&&sessionStorage.getItem('cc.app.reloaded')!==v){sessionStorage.setItem('cc.app.reloaded',v);const u=new URLSearchParams(location.search);u.set('v',v);location.replace(location.pathname+'?'+u.toString()+location.hash)}}catch(e){}}
@@ -126,7 +126,7 @@ function authView(){if(V.tab==='reset')return `<main class="center"><div class="
  <div class="card"><label>Email<input id="em" type="email" autocomplete="email" value="${esc(inv)}"></label><label>Password<input id="pw" type="password" autocomplete="${up?'new-password':'current-password'}" onkeydown="if(event.key==='Enter')${up?'signUp':'signIn'}()"></label>
  <div id="err" class="err"></div><button class="btn" onclick="${up?'signUp':'signIn'}()">${up?'Create account':'Sign in'}</button>
  <div class="row" style="margin-top:8px"><button class="lnk" style="text-align:left" onclick="authMode='${up?'in':'up'}';render()">${up?'Have an account? Sign in':'First time? Create account'}</button>${up?'':'<button class="lnk" style="text-align:right" onclick="forgot()">Forgot password?</button>'}</div></div>
- <p class="sub" style="text-align:center">Accounts are invite-only. Your company Admin sends your invite.</p></main>`}
+ <p class="sub" style="text-align:center">Accounts are invite-only. Your company Admin sends your invite.</p><div class="sub" style="text-align:center;margin-top:14px"><a href="/privacy/" style="color:inherit">Privacy</a> · <a href="/terms/" style="color:inherit">Terms</a></div></main>`}
 
 /* ---------- data ---------- */
 async function load(){await drain();const f=t=>sb.from(t).select('*').eq('company_id',cid);const role=myRole();
@@ -194,7 +194,8 @@ if(window.visualViewport){visualViewport.addEventListener('resize',fitSheet);vis
 const cap=s=>s?s[0].toUpperCase()+s.slice(1):'';const ini=s=>String(s).split(/[\s@.]+/).filter(Boolean).slice(0,2).map(x=>x[0].toUpperCase()).join('');
 function accountView(){return `<button class="back" onclick="goBack()">← Back</button><div class="card"><h2>Account</h2><div class="t">${esc(me&&me.name||'')}</div><div class="sub">${esc(sess.user.email)}</div><div class="sub">${owner?'Platform owner':esc(cap(me.role))}${me&&me.position?' · '+esc(me.position):''}</div>
  <label style="margin-top:12px">Your name<input id="myname" value="${esc(me&&me.name||'')}"></label>${owner||isAdmin()?'<button class="btn sec" onclick="busy(this,saveMyName)">Save name</button>':''}
- <button class="btn sec" onclick="sb.auth.resetPasswordForEmail(sess.user.email,{redirectTo:location.origin+location.pathname}).then(()=>toast('Reset link emailed'))">Email me a password reset link</button><button class="btn red" style="margin-top:10px" onclick="signOut()">Sign out</button></div>`}
+ <button class="btn sec" onclick="sb.auth.resetPasswordForEmail(sess.user.email,{redirectTo:location.origin+location.pathname}).then(()=>toast('Reset link emailed'))">Email me a password reset link</button><button class="btn red" style="margin-top:10px" onclick="signOut()">Sign out</button></div><div class="sub" style="text-align:center;margin-top:14px"><a href="/privacy/" style="color:inherit">Privacy</a> · <a href="/terms/" style="color:inherit">Terms</a></div>`}
+async function remSet(v){await q(sb.rpc('set_reminders',{cid,val:v}),v?'Reminders on':'Reminders off');const c=companies.find(x=>x.id===cid);if(c)c.reminders_on=v}
 async function saveMyName(){await q(sb.from('profiles').update({name:$('#myname').value.trim()}).eq('id',sess.user.id),'Saved');me.name=$('#myname').value.trim();render()}
 
 /* ---------- save queue: optimistic local state, debounced per-record saves ---------- */
@@ -453,6 +454,7 @@ const rolePill=r=>`<span class="pill ${r==='admin'?'r':r==='scheduler'?'b':'n'}"
 function adminView(){const ps=D.profiles.slice().sort((a,b)=>(a.name||a.email).localeCompare(b.name||b.email)),last=D.audit[0];
  return `<h1>Team</h1><div class="card" style="padding:10px 16px"><div class="sh"><h2>People with access · ${ps.length}</h2></div>${ps.map(p=>nrow(`go('user',{id:'${p.id}'})`,`${esc(p.name||p.email)}${p.id===sess.user.id?' (you)':''} ${posChip(p.position)}`,esc(p.email)).replace('<span class="chev">',rolePill(p.role)+'<span class="chev">')).join('')}</div>
  ${D.invites.length?`<div class="card wait" style="padding:10px 16px"><div class="sh"><h2>Waiting to sign up · ${D.invites.length}</h2></div>${D.invites.map(i=>{const k='i:'+i.id,o=V.ex===k;return `<div class="item" role="button" onclick="tgl('${k}')"><div class="grow"><div class="t">${esc(i.name||i.email)}</div><div class="sub">${esc(i.email)} · ${cap(i.role)}</div></div><button class="add" onclick="event.stopPropagation();shareLink('${esc(i.email)}')">Share</button></div>${o?`<div class="exp"><div class="row"><button class="btn sec" style="margin:0" onclick="copyLink('${esc(i.email)}')">Copy link</button><button class="btn sec" style="margin:0;color:#991b1b" onclick="invDel('${i.id}')">Cancel invite</button></div></div>`:''}`}).join('')}</div>`:''}
+ <div class="card" style="padding:4px 16px"><div class="item" style="cursor:default"><div class="grow"><div class="t">Expiry reminder emails</div><div class="sub">30 and 7 days before a cert expires — to the person and a daily list to Admins</div></div><input type="checkbox" class="sw" ${(companies.find(c=>c.id===cid)||{}).reminders_on!==false?'checked':''} onchange="remSet(this.checked)"></div></div>
  <div class="card" style="padding:4px 16px">${nrow("go('activity')",'🕘 Recent activity',last?'Last change '+when(last.at):'Nothing yet')}</div>${dock('＋ Invite someone',"go('invite')")}`}
 function userView(){const p=D.profiles.find(x=>x.id===V.id);if(!p)return adminView();const self=p.id===sess.user.id;
  return `<button class="back" onclick="goBack('admin')">← Team</button><div class="hrow"><h1 style="margin:2px 0 0">${esc(p.name||p.email)}</h1>${rolePill(p.role)}</div><div class="sub" style="margin:2px 0 12px">${esc(p.email)}</div>
