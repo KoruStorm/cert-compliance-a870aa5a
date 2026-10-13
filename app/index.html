@@ -73,7 +73,7 @@ body.hasdock{padding-bottom:calc(var(--navh,0px) + 90px)}body.sheetopen{overflow
 .pill.y{background:#fef3c7;color:#92400e}.item.bk .add{margin-left:6px}</style></head><body><div id="app"><main class="center"><div class="card">Loading…</div></main></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-const BUILD='20261013151000';
+const BUILD='20261013193000';
 async function checkVer(){try{const r=await fetch('version.txt?'+Date.now(),{cache:'no-store'});if(!r.ok)return;const v=(await r.text()).trim();
  if(v&&v!==BUILD&&typeof TYPING==='function'&&TYPING()){document.addEventListener('focusout',()=>setTimeout(checkVer,300),{once:true});return}
  if(v&&v!==BUILD&&sessionStorage.getItem('cc.app.reloaded')!==v){sessionStorage.setItem('cc.app.reloaded',v);const u=new URLSearchParams(location.search);u.set('v',v);location.replace(location.pathname+'?'+u.toString()+location.hash)}}catch(e){}}
@@ -90,7 +90,7 @@ function personDept(k){const p=person(V.id);pSet(p.id,{department:p.department==
 function invDept(k,btn){chipPick(btn,k)}
 const POS=['Foreman','Top Hand','Tower Tech III','Tower Tech IV','CM','PM','Apprentice','Journeyman'];
 const sb=supabase.createClient(SB_URL,SB_ANON);
-let sess=null,me=null,owner=false,companies=[],cid=null,D=null,V={tab:'jobs'},blocked=false,authMode='in',chan=null,crew=[],SOON=30;
+let noco=false,sess=null,me=null,owner=false,companies=[],cid=null,D=null,V={tab:'jobs'},blocked=false,authMode='in',chan=null,crew=[],SOON=30;
 const $=s=>document.querySelector(s),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const today=()=>new Date().toISOString().slice(0,10);
 const fmt=d=>d?new Date(d+'T12:00').toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'}):'';
@@ -102,12 +102,14 @@ const params=new URLSearchParams(location.search);
 async function boot(){const {data}=await sb.auth.getSession();sess=data.session;
  sb.auth.onAuthStateChange((ev,s)=>{if(ev==='PASSWORD_RECOVERY'){V={tab:'reset'};sess=s;return render()}if(ev==='SIGNED_OUT'){sess=null;me=null;D=null;render()}});
  if(location.hash.includes('type=recovery')){V={tab:'reset'};return render()}
- if(params.get('invite')&&!sess)authMode='up';
+ if(params.get('invite')&&!sess)authMode=params.get('existing')?'in':'up';
  sess?await start():render()}
-async function start(){me=(await q(sb.from('profiles').select('*').eq('id',sess.user.id)))[0];
+async function start(){try{const cl=(await sb.rpc('claim_invite')).data;if(cl&&cl.claimed)setTimeout(()=>toast('You joined '+cl.company),300)}catch(x){}
+ me=(await q(sb.from('profiles').select('*').eq('id',sess.user.id)))[0];noco=false;
  owner=(await q(sb.from('owners').select('user_id'))).length>0;
  blocked=false;
  if(owner){companies=await q(sb.from('companies').select('*').order('name'));cid=localStorage.getItem('cc.app.ownerCid');if(!companies.some(c=>c.id===cid))cid=null;V={tab:cid?'jobs':'owner'}}
+ else if(!me||!me.company_id){noco=true;blocked=true;return render()}
  else if(me){const c=await q(sb.from('companies').select('*'));if(!c.length){blocked=true;return render()}companies=c;cid=me.company_id;V={tab:me.role==='tech'?'mine':'jobs'}}
  else{blocked=true;return render()}
  if(cid)await load();history.replaceState({V,cid},'');depth=0;render();live()}
@@ -115,6 +117,7 @@ async function signIn(){const e=$('#em').value.trim(),p=$('#pw').value;$('#err')
  const {data,error}=await sb.auth.signInWithPassword({email:e,password:p});if(error)return $('#err').textContent=error.message;sess=data.session;start()}
 async function signUp(){const e=$('#em').value.trim(),p=$('#pw').value;$('#err').textContent='';if(p.length<8)return $('#err').textContent='Password must be at least 8 characters';
  const {data,error}=await sb.auth.signUp({email:e,password:p,options:{emailRedirectTo:location.origin+location.pathname}});
+ if(error&&/already registered|already exists/i.test(error.message)){authMode='in';render();$('#em').value=e;return $('#err').textContent='You already have an account. Sign in with your usual password to join.'}
  if(error)return $('#err').textContent=/database error/i.test(error.message)?'This email has not been invited yet. Ask your Admin to invite you.':error.message;
  if(!data.session)return $('#err').textContent='Check your email to confirm, then sign in.';sess=data.session;history.replaceState(null,'',location.pathname);start()}
 async function forgot(){const e=$('#em').value.trim();if(!e)return $('#err').textContent='Enter your email first';
@@ -123,7 +126,7 @@ async function setNewPw(){const p=$('#pw').value;if(p.length<8)return $('#err').
 async function signOut(){if(chan)sb.removeChannel(chan);await sb.auth.signOut();sess=null;me=null;D=null;render()}
 function authView(){if(V.tab==='reset')return `<main class="center"><div class="card"><h1>New password</h1><label>New password<input id="pw" type="password" autocomplete="new-password"></label><div id="err" class="err"></div><button class="btn" onclick="setNewPw()">Save password</button></div></main>`;
  const up=authMode==='up',inv=params.get('invite')||'';
- return `<main class="center"><div style="text-align:center;margin-bottom:18px"><div style="font-size:40px">🗼</div><h1>Cert Compliance</h1><div class="sub">${up?'Create your account — use the email you were invited with':'Sign in to your crew dashboard'}</div></div>
+ return `<main class="center"><div style="text-align:center;margin-bottom:18px"><div style="font-size:40px">🗼</div><h1>Cert Compliance</h1><div class="sub">${up?'Create your account — use the email you were invited with':inv?'Sign in with your usual password to join your new company':'Sign in to your crew dashboard'}</div></div>
  <div class="card"><label>Email<input id="em" type="email" autocomplete="email" value="${esc(inv)}"></label><label>Password<input id="pw" type="password" autocomplete="${up?'new-password':'current-password'}" onkeydown="if(event.key==='Enter')${up?'signUp':'signIn'}()"></label>
  <div id="err" class="err"></div><button class="btn" onclick="${up?'signUp':'signIn'}()">${up?'Create account':'Sign in'}</button>
  <div class="row" style="margin-top:8px"><button class="lnk" style="text-align:left" onclick="authMode='${up?'in':'up'}';render()">${up?'Have an account? Sign in':'First time? Create account'}</button>${up?'':'<button class="lnk" style="text-align:right" onclick="forgot()">Forgot password?</button>'}</div></div>
@@ -179,6 +182,7 @@ const TYPING=()=>{const e=document.activeElement;if(!e||!e.closest||!e.closest('
 let renderLater=false;document.addEventListener('focusout',()=>setTimeout(()=>{if(renderLater&&!TYPING()){renderLater=false;render()}},0));
 function render(force){if(!force&&sess&&TYPING()){renderLater=true;return}renderLater=false;render0()}
 function render0(){const a=$('#app');if(!sess)return a.innerHTML=authView();
+ if(blocked&&noco)return a.innerHTML=`<main class="center"><div class="card" style="text-align:center"><div style="font-size:40px">🏢</div><h1>Not part of a company yet</h1><p class="sub">You're signed in as <b>${esc(sess.user.email)}</b>, but this login isn't part of a company right now. When a company invites you, sign in again and you'll join automatically.</p><button class="btn" onclick="start()">Check again</button><button class="btn sec" style="margin-top:8px" onclick="signOut()">Sign out</button></div></main>`;
  if(blocked)return a.innerHTML=`<main class="center"><div class="card" style="text-align:center"><div style="font-size:40px">⏸️</div><h1>Access paused</h1><p class="sub">Your company's access to Cert Compliance is turned off right now. Your data is safe. Please contact your company Admin.</p><button class="btn sec" onclick="signOut()">Sign out</button></div></main>`;
  if(V.tab==='reset')return a.innerHTML=authView();
  const role=myRole(),c=comp();let tabs=[];
@@ -451,6 +455,9 @@ function impPreview(){const S=V.imp;if(!S)return V.impErr?`<div class="note" sty
  return `<div class="note" style="background:#dbeafe;color:#1e3a8a"><b>${esc(V.impName)}</b><br>${S.certs.length} certs · ${S.employees.length} people · ${S.jobs.length} jobs · ${S.types.length} job types · ${S.custs.length} customers<br>Will be added to <b>${esc(comp().name)}</b>. Anything that already exists (same name) is skipped, so importing twice is safe.</div>
  <button class="btn" id="impGo" onclick="runImport()">Import into ${esc(comp().name)}</button><button class="btn sec" style="margin-top:8px" onclick="V.imp=null;render()">Cancel</button>`}
 const impExtra=e=>{const o={},ph=String(e.phone||'').trim(),dp=String(e.department||'').toLowerCase(),ps=POS.includes(e.position)?e.position:null;if(ph)o.phone=ph;if(isAdmin()){if(['tower','electrical','civil'].includes(dp))o.department=dp;if(ps)o.position=ps}return o};
+async function invOk(e,target){const r=await q(sb.rpc('invite_check',{e,target}));const st=r&&r.state;
+ const msg=st==='taken'?(r.company?`This email already belongs to ${r.company}.`:'This email already belongs to another company.'):st==='here'?'This email already has a login here. Change their access on their person page.':st==='owner'?'That\u2019s the platform owner\u2019s email.':'';
+ if(msg){alert(msg);return false}return true}
 let importing=false;async function runImport(){const S=V.imp;if(!S||importing)return;importing=true;const btn=$('#impGo');if(btn){btn.disabled=true;btn.textContent='Importing…'}
  try{const L=s=>String(s||'').trim().toLowerCase(),cm={},pm={};let add={certs:0,people:0,jobs:0,lists:0};
  for(const c of S.certs){const ex=D.certs.find(d=>L(d.name)===L(c.name));if(ex)cm[c.id]=ex.id;else{const [n]=await q(sb.from('certs').insert({company_id:cid,name:c.name.trim(),valid_n:c.validN||null,valid_u:c.validU||'years'}).select());cm[c.id]=n.id;D.certs.push(n);add.certs++}}
@@ -491,7 +498,7 @@ function userView(){const p=D.profiles.find(x=>x.id===V.id);if(!p)return adminVi
 function inviteView(){return `<button class="back" onclick="goBack('admin')">← Team</button><h1>Invite someone</h1><div class="card"><label>Email<input id="ie" type="email" autocomplete="off"></label><label>Name<input id="in"></label><div class="row"><label>Role<select id="ir"><option value="tech">Tech</option><option value="scheduler">Scheduler</option><option value="admin">Admin</option></select></label><label>Position<select id="ip"><option value="">—</option>${POS.map(x=>`<option>${x}</option>`).join('')}</select></label></div>
  <label>Department (optional)</label><div id="idept">${deptChips(null,'invDept')}</div><div style="height:10px"></div><label>Link to person on the People list (optional)<select id="iper"><option value="">Create new for Techs</option>${D.people.filter(p=>!p.user_id).map(p=>`<option value="${p.id}" ${V.pid===p.id?'selected':''}>${esc(p.name)}</option>`).join('')}</select></label><button class="btn" onclick="busy(this,invite)">Send invite</button></div>`}
 function activityView(){return `<button class="back" onclick="goBack('admin')">← Team</button><h1>Recent activity</h1><div class="card">${D.audit.slice(0,50).map(a=>`<div class="sub" style="padding:6px 0;border-bottom:1px solid var(--line)">${when(a.at)} — <b>${esc(a.user_name)}</b> ${esc(a.action)}d ${esc({person_certs:'cert for',job_types:'job type',customers:'customer',certs:'cert',people:'person',jobs:'job'}[a.tbl]||a.tbl)} ${esc(a.summary||'')}</div>`).join('')||'<p class="sub">Nothing yet.</p>'}</div>`}
-async function invite(){const e=$('#ie').value.trim().toLowerCase();if(!/^\S+@\S+\.\S+$/.test(e))return toast('Enter a valid email');
+async function invite(){const e=$('#ie').value.trim().toLowerCase();if(!/^\S+@\S+\.\S+$/.test(e))return toast('Enter a valid email');if(!await invOk(e,cid))return;
  const [ni]=await q(sb.from('pending_invites').insert({email:e,company_id:cid,role:$('#ir').value,department:($('#idept .big3')||{dataset:{}}).dataset.val||null,name:$('#in').value.trim()||null,position:$('#ip').value||null,person_id:$('#iper').value||null,invited_by:sess.user.id}).select());
  const m=await mailInvite(ni);await load();go('invready',{email:e,mail:m,back:V.pid?"goBack('people')":"goBack('admin')"},true)}
 async function copyLink(e,fresh){const l=link(e);try{await navigator.clipboard.writeText(l);toast((fresh?'Invite saved. ':'')+'Sign-up link copied — text or email it to them')}catch(x){prompt('Send them this sign-up link:',l)}}
@@ -570,11 +577,13 @@ function companyView(){const c=companies.find(x=>x.id===V.id);if(!c)return owner
  <div class="card"><h2>Billing</h2><div class="note">💳 Stripe billing isn't connected yet. Once it is, this shows payments and turns access off automatically after a 7-day grace period.</div></div>
  <div class="card" style="padding:4px 16px">${nrow(`openBk('${c.id}')`,'🛟 Backup &amp; restore','Download, saved backups, restore')}</div><button class="btn sec" onclick="openCo('${c.id}')">Open company as Admin ›</button><button class="btn red" style="margin-top:10px" onclick="coDel('${c.id}')">Delete company and all its data</button>`}
 async function coSave(id){await q(sb.from('companies').update({name:$('#cn').value.trim(),plan:$('#cpl').value,price:$('#cpr').value||null,trial_ends:$('#ctr').value||null,notes:$('#cno').value}).eq('id',id),'Saved');companies=await q(sb.from('companies').select('*').order('name'));render()}
-async function coDel(id){const c=companies.find(x=>x.id===id);if(prompt(`Type the company name to permanently delete it:\n${c.name}`)!==c.name)return;await q(sb.from('companies').delete().eq('id',id),'Deleted');companies=await q(sb.from('companies').select('*').order('name'));go('owner')}
+async function coDel(id){const c=companies.find(x=>x.id===id);const t=prompt(`This permanently deletes ${c.name} and all its people, jobs, certs, photos and backups. Members' logins are kept but won't belong to any company.\n\nType the company name to confirm:`);if(t===null)return;if(t.trim()!==c.name)return alert('The name didn\u2019t match, so nothing was deleted.');
+ const paths=await q(sb.rpc('delete_company',{cid:id,confirm_name:c.name}));for(let i=0;i<(paths||[]).length;i+=100)await sb.storage.from('cert-photos').remove(paths.slice(i,i+100));
+ if(cid===id){cid=null;localStorage.removeItem('cc.app.ownerCid');D=null}toast(c.name+' deleted');companies=await q(sb.from('companies').select('*').order('name'));go('owner',null,true)}
 function inviteCoView(){return `<button class="back" onclick="goBack('owner')">← Companies</button><h1>Invite a company</h1><div class="card"><label>Company name<input id="ncn" placeholder="e.g. Example Towers Inc."></label><label>Admin's name<input id="nan"></label><label>Admin's email<input id="nae" type="email"></label>
  <div class="row"><label>Pricing<select id="npl"><option value="per_company">Per company</option><option value="per_user">Per user</option></select></label><label>Price $/mo<input id="npr" type="number"></label></div><label>Free trial (days, optional)<input id="ntd" type="number" min="0" placeholder="e.g. 30"></label>
  <button class="btn" onclick="busy(this,inviteCo)">Create company &amp; invite admin</button><p class="sub">You'll get a sign-up link to send to their Admin. They then invite their own team.</p></div>`}
-async function inviteCo(){const n=$('#ncn').value.trim(),e=$('#nae').value.trim().toLowerCase(),d=parseInt($('#ntd').value);if(!n)return toast('Enter a company name');if(!/^\S+@\S+\.\S+$/.test(e))return toast('Enter the admin\u2019s email');
+async function inviteCo(){const n=$('#ncn').value.trim(),e=$('#nae').value.trim().toLowerCase(),d=parseInt($('#ntd').value);if(!n)return toast('Enter a company name');if(!/^\S+@\S+\.\S+$/.test(e))return toast('Enter the admin\u2019s email');if(!await invOk(e,null))return;
  const te=d>0?new Date(Date.now()+d*864e5).toISOString().slice(0,10):null;const [c]=await q(sb.from('companies').insert({name:n,plan:$('#npl').value,price:$('#npr').value||null,trial_ends:te}).select());
  const [ni]=await q(sb.from('pending_invites').insert({email:e,company_id:c.id,role:'admin',name:$('#nan').value.trim()||null,invited_by:sess.user.id}).select());const m=await mailInvite(ni);companies=await q(sb.from('companies').select('*').order('name'));await loadCoInv(c.id);go('invready',{email:e,mail:m,back:"goBack('owner')"},true)}
 boot();
