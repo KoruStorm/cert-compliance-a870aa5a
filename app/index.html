@@ -73,7 +73,7 @@ body.hasdock{padding-bottom:calc(var(--navh,0px) + 90px)}body.sheetopen{overflow
 .pill.y{background:#fef3c7;color:#92400e}.item.bk .add{margin-left:6px}</style></head><body><div id="app"><main class="center"><div class="card">Loading…</div></main></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-const BUILD='20261013043000';
+const BUILD='20261013120000';
 async function checkVer(){try{const r=await fetch('version.txt?'+Date.now(),{cache:'no-store'});if(!r.ok)return;const v=(await r.text()).trim();
  if(v&&v!==BUILD&&typeof TYPING==='function'&&TYPING()){document.addEventListener('focusout',()=>setTimeout(checkVer,300),{once:true});return}
  if(v&&v!==BUILD&&sessionStorage.getItem('cc.app.reloaded')!==v){sessionStorage.setItem('cc.app.reloaded',v);const u=new URLSearchParams(location.search);u.set('v',v);location.replace(location.pathname+'?'+u.toString()+location.hash)}}catch(e){}}
@@ -131,7 +131,7 @@ function authView(){if(V.tab==='reset')return `<main class="center"><div class="
 
 /* ---------- data ---------- */
 async function load(){await drain();const f=t=>sb.from(t).select('*').eq('company_id',cid);const role=myRole();
- const [certs,types,custs,people,pcs,jobs]=await Promise.all(['certs','job_types','customers','people','person_certs','jobs'].map(t=>q(f(t))));
+ const [certs,types,custs,people,pcs,jobs]=await Promise.all(['certs','job_types','customers','people','person_certs','jobs'].map(t=>q(t==='people'?f(t).is('removed_at',null):f(t))));
  D={certs:certs.sort((a,b)=>a.name.localeCompare(b.name)),types,custs,people:people.sort((a,b)=>a.name.localeCompare(b.name)),pcs,jobs:jobs.sort((a,b)=>(a.site||'').localeCompare(b.site||'')),profiles:[],invites:[],audit:[]};
  D.photos=(await sb.from('cert_photos').select('*').eq('company_id',cid).order('created_at')).data||[];
  if(role==='admin'||role==='scheduler'){D.profiles=await q(sb.from('profiles').select('*').eq('company_id',cid));D.audit=await q(sb.from('audit_log').select('*').eq('company_id',cid).order('at',{ascending:false}).limit(200))}
@@ -352,7 +352,7 @@ function certRows(pid,ed,techUpload){const held=D.certs.filter(c=>pc(pid,c.id));
  ${o?`<div class="exp"><div class="row"><label>Acquired<input type="date" value="${h.acquired||''}" ${dis} onchange="pcDate('${h.id}','acquired',this.value,'${c.id}')"></label><label>Expires${c.valid_n?` <span class="sub">(${c.valid_n} ${c.valid_u})</span>`:''}<input type="date" data-exp="${h.id}" value="${h.expires||''}" ${dis} onchange="pcDate('${h.id}','expires',this.value)"></label></div>
  ${tmp?'':phStrip(h.id)}
  <div class="row">${(ed||techUpload)&&!tmp?phAdd(h.id,pid,'btn sec','margin:0'):''}${ed?`<button class="btn sec" style="margin:0;color:#991b1b" onclick="pcRemove('${pid}','${c.id}')">Remove</button>`:''}</div></div>`:''}`}).join('')}
-function pcRemove(pid,c){if(!confirm(`Remove ${cert(c).name} from ${person(pid).name}?`))return;V.ex=null;pcTog(pid,c,false)}
+function pcRemove(pid,c){if(!confirm(`Remove ${cert(c).name} from ${person(pid).name}?`+(phOf((pc(pid,c)||{}).id).length?' Its photos will be deleted too.':'')))return;V.ex=null;pcTog(pid,c,false)}
 function accessCard(p){const pr=p.user_id&&D.profiles.find(x=>x.id===p.user_id),self=p.user_id===sess.user.id&&!owner;
  if(!pr){const inv=D.invites.find(i=>i.person_id===p.id);return `<div class="card"><div class="sh"><h2>App access</h2></div><p class="sub" style="margin:0 0 10px">${inv?'Invited — waiting for them to sign up ('+esc(inv.email)+').':'No login yet.'}</p>${inv?'':`<button class="btn sec" style="margin:0" onclick="go('invite',{pid:'${p.id}'})">Invite to the app</button>`}</div>`}
  return `<div class="card"><div class="sh"><h2>App access</h2></div><div class="sub" style="margin:-4px 0 8px">${esc(pr.email)}</div><label style="margin:0">Access${self?' <span class="sub">(you can\u2019t change your own)</span>':''}<select ${self?'disabled':''} onchange="accSet('${pr.id}',this.value)">${[['admin','Admin'],['scheduler','Scheduler'],['tech','Tech'],['none','No access']].map(([v,l])=>`<option value="${v}" ${v===pr.role?'selected':''}>${l}</option>`).join('')}</select></label>${pr.role==='none'?'<p class="sub" style="margin:8px 0 0">Can\u2019t sign in to this company. Pick a role to give access back.</p>':''}</div>`}
@@ -365,17 +365,19 @@ function personView(){const p=person(V.id);if(!p)return peopleView();const ed=ca
  <label>Phone<input type="tel" inputmode="tel" autocomplete="off" placeholder="Optional — for Call / Text" value="${esc(p.phone||'')}" ${ed?'':'disabled'} onchange="pSet('${p.id}',{phone:this.value.trim()||null})"></label>
  <label>Position ${isAdmin()?'':'<span class="sub">🔒 Only an Admin can change this</span>'}<select ${isAdmin()?'':'disabled'} onchange="pSet('${p.id}',{position:this.value||null})"><option value="">—</option>${POS.map(x=>`<option ${x===p.position?'selected':''}>${x}</option>`).join('')}</select></label>
  <label>Department ${isAdmin()?'':'<span class="sub">🔒 Only an Admin can change this</span>'}</label>${deptChips(p.department,'personDept',!isAdmin())}<div style="height:12px"></div>
- ${ed?`<div style="text-align:center"><button class="lnk" style="color:#991b1b" onclick="pDel('${p.id}')">Remove person</button></div>`:''}`)}</div>
+ `)}</div>
  ${isAdmin()?accessCard(p):''}
+ ${isAdmin()&&!(p.user_id&&p.user_id===sess.user.id)?`<div style="text-align:center;margin:6px 0 18px"><button class="btn red" style="width:auto;display:inline-flex;padding:11px 22px" onclick="pDel('${p.id}')">Remove person</button></div>`:''}
  ${ed?dock('＋ Add cert',"openSheet('cert')"):''}${V.sheet==='cert'&&ed?certSheet(p):''}`}
 function certSheet(p){const left=D.certs.filter(c=>!pc(p.id,c.id));return `<div class="dim" onclick="closeSheet()"></div><div class="sheet" id="sheet" role="dialog" aria-label="Add cert"><div class="hd"><div class="grab"></div><div class="t1" style="margin:0"><span>Add certs for ${esc(p.name.split(' ')[0])}</span><button class="lnk" onclick="closeSheet()">Done</button></div></div>
  <div class="list">${left.map(c=>`<div class="item"><div class="grow"><div class="t">${esc(c.name)}</div><div class="sub">${c.valid_n?`Valid for ${c.valid_n} ${c.valid_u}`:'No set validity'}</div></div><button class="add" onclick="pcTog('${p.id}','${c.id}',true)">Add</button></div>`).join('')||`<div class="empty"><div class="ic">✅</div>${D.certs.length?'All certs added.':'No certs set up yet. Add them in Setup → Certs.'}</div>`}</div></div>`}
 async function pSet(id,patch){await q(sb.from('people').update(patch).eq('id',id),'Saved');await load();render()}
-async function pDel(id){if(!confirm('Remove this person and their certs?'))return;for(const j of D.jobs.filter(j=>j.crew.includes(id)))await q(sb.from('jobs').update({crew:j.crew.filter(x=>x!==id)}).eq('id',j.id));await q(sb.from('people').delete().eq('id',id),'Removed');await load();go('people')}
+async function pDel(id){const p=person(id);if(!p)return;if(!confirm(`Remove ${p.name} from the company?\n\nThey'll be taken off all crews, their certs and photos will be deleted${p.user_id?', and their login will be set to No access':''}.`))return;
+ const paths=await q(sb.rpc('remove_person',{pid:id}));if(paths&&paths.length)await sb.storage.from('cert-photos').remove(paths);toast(p.name+' removed');await load();go('people')}
 async function pcTog(pid,c,on){const k='pc:'+pid+':'+c;if(!SQ[k]){const r=pc(pid,c);SQ[k]={srv:r&&!String(r.id).startsWith('tmp')?r.id:null}}
  if(on){if(!pc(pid,c))D.pcs.push({id:'tmp-'+Math.random().toString(36).slice(2),company_id:cid,person_id:pid,cert_id:c,acquired:null,expires:null,photo_path:null})}else D.pcs=D.pcs.filter(x=>!(x.person_id===pid&&x.cert_id===c));render();
  queue(k,async()=>{const s=SQ[k],want=!!pc(pid,c);if(want&&!s.srv){const {data,error}=await sb.from('person_certs').insert({company_id:cid,person_id:pid,cert_id:c}).select();if(error)return error;s.srv=data[0].id;const r=pc(pid,c);if(r&&String(r.id).startsWith('tmp')){r.id=data[0].id;if(!pendingN()||Object.keys(SQ).length===1)setTimeout(()=>{if(V.tab==='person'&&Date.now()-lastTap>500)render()},0)}}
-  else if(!want&&s.srv){const {error}=await sb.from('person_certs').delete().eq('id',s.srv);if(error)return error;s.srv=null}return null})}
+  else if(!want&&s.srv){const gone=(D.photos||[]).filter(x=>x.person_cert_id===s.srv).map(x=>x.path);const {error}=await sb.from('person_certs').delete().eq('id',s.srv);if(error)return error;if(gone.length){sb.storage.from('cert-photos').remove(gone);D.photos=D.photos.filter(x=>!gone.includes(x.path))}s.srv=null}return null})}
 function addValid(d,n,u){const x=new Date(d+'T12:00');if(u==='months')x.setMonth(x.getMonth()+n);else if(u==='days')x.setDate(x.getDate()+n);else x.setFullYear(x.getFullYear()+n);return x.toISOString().slice(0,10)}
 function pcDate(id,f,v,c){const r=D.pcs.find(x=>x.id===id);if(!r)return;r[f]=v||null;let msg='Saved';
  if(f==='acquired'&&v&&c){const ce=cert(c);if(ce&&ce.valid_n){r.expires=addValid(v,ce.valid_n,ce.valid_u||'years');const ex=document.querySelector(`input[data-exp="${id}"]`);if(ex)ex.value=r.expires;msg='Expiry filled in'}}
