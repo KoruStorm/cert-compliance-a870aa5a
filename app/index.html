@@ -72,7 +72,7 @@ body.hasdock{padding-bottom:calc(var(--navh,0px) + 90px)}body.sheetopen{overflow
 .pill.y{background:#fef3c7;color:#92400e}.item.bk .add{margin-left:6px}</style></head><body><div id="app"><main class="center"><div class="card">Loading…</div></main></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-const BUILD='20261013002500';
+const BUILD='20261013013500';
 async function checkVer(){try{const r=await fetch('version.txt?'+Date.now(),{cache:'no-store'});if(!r.ok)return;const v=(await r.text()).trim();
  if(v&&v!==BUILD&&typeof TYPING==='function'&&TYPING()){document.addEventListener('focusout',()=>setTimeout(checkVer,300),{once:true});return}
  if(v&&v!==BUILD&&sessionStorage.getItem('cc.app.reloaded')!==v){sessionStorage.setItem('cc.app.reloaded',v);const u=new URLSearchParams(location.search);u.set('v',v);location.replace(location.pathname+'?'+u.toString()+location.hash)}}catch(e){}}
@@ -437,11 +437,12 @@ let importing=false;async function runImport(){const S=V.imp;if(!S||importing)re
 async function shareLink(e){const url=link(e);if(navigator.share){try{await navigator.share({title:'Join Cert Compliance',text:"You're invited to Cert Compliance. Tap to create your account:",url});return}catch(x){if(x.name==='AbortError')return}}copyLink(e)}
 function invRows(list){return list.map(i=>`<div style="padding:10px 0;border-bottom:1px solid var(--line)"><div class="t">${esc(i.name||i.email)}</div><div class="sub">${esc(i.email)} · ${cap(i.role)}</div>
  <div class="row" style="margin-top:6px"><button class="btn" onclick="shareLink('${esc(i.email)}')">📤 Share link</button><button class="btn sec" onclick="copyLink('${esc(i.email)}')">Copy link</button></div><button class="lnk" style="color:#991b1b" onclick="invDel('${i.id}')">Cancel invite</button></div>`).join('')}
-function inviteReadyView(){return `<button class="back" onclick="${V.back}">← Back</button><div class="card" style="text-align:center"><div style="font-size:44px">✉️</div><h1>Invite ready</h1><p class="sub">Send this link to <b>${esc(V.email)}</b>. They tap it and create their account.</p>
+function inviteReadyView(){return `<button class="back" onclick="${V.back}">← Back</button><div class="card" style="text-align:center"><div style="font-size:44px">✉️</div><h1>${V.mail==='sent'?'Email sent':'Invite ready'}</h1><p class="sub">${V.mail==='sent'?`We emailed a sign-up link to <b>${esc(V.email)}</b>. You can also share it yourself below.`:`Send this link to <b>${esc(V.email)}</b>. They tap it and create their account.`}</p>${V.mail==='fail'?'<div class="note" style="text-align:left">We couldn’t send the email just now. The invite is saved — share the link below instead.</div>':''}
  <div class="note" style="word-break:break-all;text-align:left;font-size:14px;user-select:all">${esc(link(V.email))}</div>
  <button class="btn" style="font-size:17px;padding:14px" onclick="shareLink('${esc(V.email)}')">📤 Share link</button><button class="btn sec" style="margin-top:10px" onclick="copyLink('${esc(V.email)}')">Copy link</button>
- <div class="note" style="text-align:left">ℹ️ The app doesn't email invites yet — send this link by text or email. You can find it again under “Waiting to sign up”.</div>
+ <div class="note" style="text-align:left">ℹ️ You can find this link again under “Waiting to sign up”.</div>
  <button class="btn sec" style="margin-top:10px" onclick="${V.back}">Done</button></div>`}
+async function mailInvite(i){try{const {data,error}=await sb.functions.invoke('send-invite',{body:{invite_id:i.id}});if(error||!data||!data.ok)throw error||new Error('x');toast('Email sent to '+i.email);return 'sent'}catch(x){console.warn(x);return 'fail'}}
 const link=e=>location.origin+location.pathname+'?invite='+encodeURIComponent(e);
 const rolePill=r=>`<span class="pill ${r==='admin'?'r':r==='scheduler'?'b':'n'}">${cap(r)}</span>`;
 function adminView(){const ps=D.profiles.slice().sort((a,b)=>(a.name||a.email).localeCompare(b.name||b.email)),last=D.audit[0];
@@ -458,8 +459,8 @@ function inviteView(){return `<button class="back" onclick="goBack('admin')">←
  <label>Department (optional)</label><div id="idept">${deptChips(null,'invDept')}</div><div style="height:10px"></div><label>Link to person on the People list (optional)<select id="iper"><option value="">Create new for Techs</option>${D.people.filter(p=>!p.user_id).map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join('')}</select></label><button class="btn" onclick="busy(this,invite)">Send invite</button></div>`}
 function activityView(){return `<button class="back" onclick="goBack('admin')">← Team</button><h1>Recent activity</h1><div class="card">${D.audit.slice(0,50).map(a=>`<div class="sub" style="padding:6px 0;border-bottom:1px solid var(--line)">${when(a.at)} — <b>${esc(a.user_name)}</b> ${esc(a.action)}d ${esc({person_certs:'cert for',job_types:'job type',customers:'customer',certs:'cert',people:'person',jobs:'job'}[a.tbl]||a.tbl)} ${esc(a.summary||'')}</div>`).join('')||'<p class="sub">Nothing yet.</p>'}</div>`}
 async function invite(){const e=$('#ie').value.trim().toLowerCase();if(!/^\S+@\S+\.\S+$/.test(e))return toast('Enter a valid email');
- await q(sb.from('pending_invites').insert({email:e,company_id:cid,role:$('#ir').value,department:($('#idept .big3')||{dataset:{}}).dataset.val||null,name:$('#in').value.trim()||null,position:$('#ip').value||null,person_id:$('#iper').value||null,invited_by:sess.user.id}));
- await load();go('invready',{email:e,back:"go('admin')"})}
+ const [ni]=await q(sb.from('pending_invites').insert({email:e,company_id:cid,role:$('#ir').value,department:($('#idept .big3')||{dataset:{}}).dataset.val||null,name:$('#in').value.trim()||null,position:$('#ip').value||null,person_id:$('#iper').value||null,invited_by:sess.user.id}).select());
+ const m=await mailInvite(ni);await load();go('invready',{email:e,back:"go('admin')"})}
 async function copyLink(e,fresh){const l=link(e);try{await navigator.clipboard.writeText(l);toast((fresh?'Invite saved. ':'')+'Sign-up link copied — text or email it to them')}catch(x){prompt('Send them this sign-up link:',l)}}
 async function invDel(id){if(!confirm('Cancel this invite?'))return;await q(sb.from('pending_invites').delete().eq('id',id),'Invite cancelled');if(V.tab==='company')await loadCoInv(V.id);else await load();render()}
 let coInv=[];async function loadCoInv(id){coInv=await q(sb.from('pending_invites').select('*').eq('company_id',id).order('created_at'))}
@@ -542,6 +543,6 @@ function inviteCoView(){return `<button class="back" onclick="goBack('owner')">�
  <button class="btn" onclick="busy(this,inviteCo)">Create company &amp; invite admin</button><p class="sub">You'll get a sign-up link to send to their Admin. They then invite their own team.</p></div>`}
 async function inviteCo(){const n=$('#ncn').value.trim(),e=$('#nae').value.trim().toLowerCase(),d=parseInt($('#ntd').value);if(!n)return toast('Enter a company name');if(!/^\S+@\S+\.\S+$/.test(e))return toast('Enter the admin\u2019s email');
  const te=d>0?new Date(Date.now()+d*864e5).toISOString().slice(0,10):null;const [c]=await q(sb.from('companies').insert({name:n,plan:$('#npl').value,price:$('#npr').value||null,trial_ends:te}).select());
- await q(sb.from('pending_invites').insert({email:e,company_id:c.id,role:'admin',name:$('#nan').value.trim()||null,invited_by:sess.user.id}));companies=await q(sb.from('companies').select('*').order('name'));await loadCoInv(c.id);go('invready',{email:e,back:"go('company',{id:'"+c.id+"'})"})}
+ const [ni]=await q(sb.from('pending_invites').insert({email:e,company_id:c.id,role:'admin',name:$('#nan').value.trim()||null,invited_by:sess.user.id}).select());const m=await mailInvite(ni);companies=await q(sb.from('companies').select('*').order('name'));await loadCoInv(c.id);go('invready',{email:e,mail:m,back:"go('company',{id:'"+c.id+"'})"})}
 boot();
 </script></body></html>
