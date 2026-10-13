@@ -73,7 +73,7 @@ body.hasdock{padding-bottom:calc(var(--navh,0px) + 90px)}body.sheetopen{overflow
 .pill.y{background:#fef3c7;color:#92400e}.item.bk .add{margin-left:6px}</style></head><body><div id="app"><main class="center"><div class="card">Loading…</div></main></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-const BUILD='20261013120000';
+const BUILD='20261013124500';
 async function checkVer(){try{const r=await fetch('version.txt?'+Date.now(),{cache:'no-store'});if(!r.ok)return;const v=(await r.text()).trim();
  if(v&&v!==BUILD&&typeof TYPING==='function'&&TYPING()){document.addEventListener('focusout',()=>setTimeout(checkVer,300),{once:true});return}
  if(v&&v!==BUILD&&sessionStorage.getItem('cc.app.reloaded')!==v){sessionStorage.setItem('cc.app.reloaded',v);const u=new URLSearchParams(location.search);u.set('v',v);location.replace(location.pathname+'?'+u.toString()+location.hash)}}catch(e){}}
@@ -130,10 +130,11 @@ function authView(){if(V.tab==='reset')return `<main class="center"><div class="
  <p class="sub" style="text-align:center">Accounts are invite-only. Your company Admin sends your invite.</p><div class="sub" style="text-align:center;margin-top:14px"><a href="/privacy/" style="color:inherit">Privacy</a> · <a href="/terms/" style="color:inherit">Terms</a></div></main>`}
 
 /* ---------- data ---------- */
+async function all(mk){const out=[];for(let i=0;;i+=1000){const r=await q(mk().order('id').range(i,i+999));out.push(...r);if(r.length<1000)return out}}
 async function load(){await drain();const f=t=>sb.from(t).select('*').eq('company_id',cid);const role=myRole();
- const [certs,types,custs,people,pcs,jobs]=await Promise.all(['certs','job_types','customers','people','person_certs','jobs'].map(t=>q(t==='people'?f(t).is('removed_at',null):f(t))));
+ const [certs,types,custs,people,pcs,jobs]=await Promise.all(['certs','job_types','customers','people','person_certs','jobs'].map(t=>all(()=>t==='people'?f(t).is('removed_at',null):f(t))));
  D={certs:certs.sort((a,b)=>a.name.localeCompare(b.name)),types,custs,people:people.sort((a,b)=>a.name.localeCompare(b.name)),pcs,jobs:jobs.sort((a,b)=>(a.site||'').localeCompare(b.site||'')),profiles:[],invites:[],audit:[]};
- D.photos=(await sb.from('cert_photos').select('*').eq('company_id',cid).order('created_at')).data||[];
+ D.photos=(await all(()=>sb.from('cert_photos').select('*').eq('company_id',cid)).catch(()=>[])).sort((a,b)=>a.created_at<b.created_at?-1:1);
  if(role==='admin'||role==='scheduler'){D.profiles=await q(sb.from('profiles').select('*').eq('company_id',cid));D.audit=await q(sb.from('audit_log').select('*').eq('company_id',cid).order('at',{ascending:false}).limit(200))}
  if(role==='admin')D.invites=await q(sb.from('pending_invites').select('*').eq('company_id',cid));
  if(role==='tech'){crew=(await q(sb.rpc('my_crew')))||[]}}
@@ -449,12 +450,14 @@ async function pickBackup(inp){const f=inp.files[0];inp.value='';if(!f)return;le
 function impPreview(){const S=V.imp;if(!S)return V.impErr?`<div class="note" style="background:#fee2e2;color:#991b1b">${esc(V.impErr)}</div>`:'';
  return `<div class="note" style="background:#dbeafe;color:#1e3a8a"><b>${esc(V.impName)}</b><br>${S.certs.length} certs · ${S.employees.length} people · ${S.jobs.length} jobs · ${S.types.length} job types · ${S.custs.length} customers<br>Will be added to <b>${esc(comp().name)}</b>. Anything that already exists (same name) is skipped, so importing twice is safe.</div>
  <button class="btn" id="impGo" onclick="runImport()">Import into ${esc(comp().name)}</button><button class="btn sec" style="margin-top:8px" onclick="V.imp=null;render()">Cancel</button>`}
+const impExtra=e=>{const o={},ph=String(e.phone||'').trim(),dp=String(e.department||'').toLowerCase(),ps=POS.includes(e.position)?e.position:null;if(ph)o.phone=ph;if(isAdmin()){if(['tower','electrical','civil'].includes(dp))o.department=dp;if(ps)o.position=ps}return o};
 let importing=false;async function runImport(){const S=V.imp;if(!S||importing)return;importing=true;const btn=$('#impGo');if(btn){btn.disabled=true;btn.textContent='Importing…'}
  try{const L=s=>String(s||'').trim().toLowerCase(),cm={},pm={};let add={certs:0,people:0,jobs:0,lists:0};
  for(const c of S.certs){const ex=D.certs.find(d=>L(d.name)===L(c.name));if(ex)cm[c.id]=ex.id;else{const [n]=await q(sb.from('certs').insert({company_id:cid,name:c.name.trim(),valid_n:c.validN||null,valid_u:c.validU||'years'}).select());cm[c.id]=n.id;D.certs.push(n);add.certs++}}
  const ids=a=>[...new Set((a||[]).map(i=>cm[i]).filter(Boolean))];
  for(const [k,arr] of [['types',S.types],['custs',S.custs]])for(const x of arr){if(D[k].some(d=>L(d.name)===L(x.name)))continue;const r=ids(x.certs);const [n]=await q(sb.from(TBL[k]).insert({company_id:cid,name:x.name,certs:r,one_of:ids(x.oneOf).filter(i=>r.includes(i))}).select());D[k].push(n);add.lists++}
- for(const e of S.employees){let p=D.people.find(d=>L(d.name)===L(e.name));if(!p){[p]=await q(sb.from('people').insert({company_id:cid,name:e.name.trim()}).select());D.people.push(p);add.people++}pm[e.id]=p.id;
+ for(const e of S.employees){let p=D.people.find(d=>L(d.name)===L(e.name));const ex=impExtra(e);if(!p){[p]=await q(sb.from('people').insert({company_id:cid,name:e.name.trim(),...ex}).select());D.people.push(p);add.people++}
+  else{const fill={};for(const k in ex)if(!p[k])fill[k]=ex[k];if(Object.keys(fill).length){await q(sb.from('people').update(fill).eq('id',p.id));Object.assign(p,fill)}}pm[e.id]=p.id;
   const have=new Set(D.pcs.filter(x=>x.person_id===p.id).map(x=>x.cert_id));const rows=Object.entries(e.certs||{}).filter(([k])=>cm[k]&&!have.has(cm[k])).map(([k,h])=>({company_id:cid,person_id:p.id,cert_id:cm[k],acquired:(h&&h.acquired)||null,expires:(h&&(h.expiry||h.expires))||null}));
   const uniq=[...new Map(rows.map(r=>[r.cert_id,r])).values()];if(uniq.length){const n=await q(sb.from('person_certs').insert(uniq).select());D.pcs.push(...n)}}
  const busy=new Set(D.jobs.flatMap(j=>j.crew));
