@@ -73,7 +73,7 @@ body.hasdock{padding-bottom:calc(var(--navh,0px) + 90px)}body.sheetopen{overflow
 .pill.y{background:#fef3c7;color:#92400e}.item.bk .add{margin-left:6px}</style></head><body><div id="app"><main class="center"><div class="card">Loading…</div></main></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-const BUILD='20261013130000';
+const BUILD='20261013151000';
 async function checkVer(){try{const r=await fetch('version.txt?'+Date.now(),{cache:'no-store'});if(!r.ok)return;const v=(await r.text()).trim();
  if(v&&v!==BUILD&&typeof TYPING==='function'&&TYPING()){document.addEventListener('focusout',()=>setTimeout(checkVer,300),{once:true});return}
  if(v&&v!==BUILD&&sessionStorage.getItem('cc.app.reloaded')!==v){sessionStorage.setItem('cc.app.reloaded',v);const u=new URLSearchParams(location.search);u.set('v',v);location.replace(location.pathname+'?'+u.toString()+location.hash)}}catch(e){}}
@@ -493,7 +493,7 @@ function inviteView(){return `<button class="back" onclick="goBack('admin')">←
 function activityView(){return `<button class="back" onclick="goBack('admin')">← Team</button><h1>Recent activity</h1><div class="card">${D.audit.slice(0,50).map(a=>`<div class="sub" style="padding:6px 0;border-bottom:1px solid var(--line)">${when(a.at)} — <b>${esc(a.user_name)}</b> ${esc(a.action)}d ${esc({person_certs:'cert for',job_types:'job type',customers:'customer',certs:'cert',people:'person',jobs:'job'}[a.tbl]||a.tbl)} ${esc(a.summary||'')}</div>`).join('')||'<p class="sub">Nothing yet.</p>'}</div>`}
 async function invite(){const e=$('#ie').value.trim().toLowerCase();if(!/^\S+@\S+\.\S+$/.test(e))return toast('Enter a valid email');
  const [ni]=await q(sb.from('pending_invites').insert({email:e,company_id:cid,role:$('#ir').value,department:($('#idept .big3')||{dataset:{}}).dataset.val||null,name:$('#in').value.trim()||null,position:$('#ip').value||null,person_id:$('#iper').value||null,invited_by:sess.user.id}).select());
- const m=await mailInvite(ni);await load();go('invready',{email:e,back:"go('admin')"})}
+ const m=await mailInvite(ni);await load();go('invready',{email:e,mail:m,back:V.pid?"goBack('people')":"goBack('admin')"},true)}
 async function copyLink(e,fresh){const l=link(e);try{await navigator.clipboard.writeText(l);toast((fresh?'Invite saved. ':'')+'Sign-up link copied — text or email it to them')}catch(x){prompt('Send them this sign-up link:',l)}}
 async function invDel(id){if(!confirm('Cancel this invite?'))return;await q(sb.from('pending_invites').delete().eq('id',id),'Invite cancelled');if(V.tab==='company')await loadCoInv(V.id);else await load();render()}
 let coInv=[];async function loadCoInv(id){coInv=await q(sb.from('pending_invites').select('*').eq('company_id',id).order('created_at'))}
@@ -576,6 +576,6 @@ function inviteCoView(){return `<button class="back" onclick="goBack('owner')">�
  <button class="btn" onclick="busy(this,inviteCo)">Create company &amp; invite admin</button><p class="sub">You'll get a sign-up link to send to their Admin. They then invite their own team.</p></div>`}
 async function inviteCo(){const n=$('#ncn').value.trim(),e=$('#nae').value.trim().toLowerCase(),d=parseInt($('#ntd').value);if(!n)return toast('Enter a company name');if(!/^\S+@\S+\.\S+$/.test(e))return toast('Enter the admin\u2019s email');
  const te=d>0?new Date(Date.now()+d*864e5).toISOString().slice(0,10):null;const [c]=await q(sb.from('companies').insert({name:n,plan:$('#npl').value,price:$('#npr').value||null,trial_ends:te}).select());
- const [ni]=await q(sb.from('pending_invites').insert({email:e,company_id:c.id,role:'admin',name:$('#nan').value.trim()||null,invited_by:sess.user.id}).select());const m=await mailInvite(ni);companies=await q(sb.from('companies').select('*').order('name'));await loadCoInv(c.id);go('invready',{email:e,mail:m,back:"go('company',{id:'"+c.id+"'})"})}
+ const [ni]=await q(sb.from('pending_invites').insert({email:e,company_id:c.id,role:'admin',name:$('#nan').value.trim()||null,invited_by:sess.user.id}).select());const m=await mailInvite(ni);companies=await q(sb.from('companies').select('*').order('name'));await loadCoInv(c.id);go('invready',{email:e,mail:m,back:"goBack('owner')"},true)}
 boot();
 </script></body></html>
