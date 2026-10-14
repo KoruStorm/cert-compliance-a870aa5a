@@ -73,7 +73,7 @@ body.hasdock{padding-bottom:calc(var(--navh,0px) + 90px)}body.sheetopen{overflow
 .pill.y{background:#fef3c7;color:#92400e}.item.bk .add{margin-left:6px}</style></head><body><div id="app"><main class="center"><div class="card">Loading…</div></main></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.min.js"></script>
 <script>
-const BUILD='20261014040000';
+const BUILD='20261014113000';
 async function checkVer(){try{const r=await fetch('version.txt?'+Date.now(),{cache:'no-store'});if(!r.ok)return;const v=(await r.text()).trim();
  if(v&&v!==BUILD&&typeof TYPING==='function'&&TYPING()){document.addEventListener('focusout',()=>setTimeout(checkVer,300),{once:true});return}
  if(v&&v!==BUILD&&sessionStorage.getItem('cc.app.reloaded')!==v){sessionStorage.setItem('cc.app.reloaded',v);const u=new URLSearchParams(location.search);u.set('v',v);location.replace(location.pathname+'?'+u.toString()+location.hash)}}catch(e){}}
@@ -617,7 +617,7 @@ async function scanSave(){const on=SCAN.jobs.filter(j=>j.on);const note=`Added f
  const mine=new Set(plan.flatMap(x=>x.crew)),targets=new Set(plan.map(x=>x.j.ex).filter(Boolean));
  for(const e of D.jobs){if(targets.has(e.id))continue;const keep=e.crew.filter(i=>!mine.has(i));if(keep.length!==e.crew.length)await q(sb.from('jobs').update({crew:keep}).eq('id',e.id))}
  for(const [k,t] of [['newC','customers'],['newT','job_types']])for(const nm of [...new Set(on.map(j=>j[k]).filter(Boolean))])if(!(t==='customers'?D.custs:D.types).some(x=>nn(x.name)===nn(nm))){const [r]=await q(sb.from(t).insert({company_id:cid,name:nm,certs:[],one_of:[]}).select());(t==='customers'?D.custs:D.types).push(r)}
- let n=0,u=0;for(const {j,crew,fm,sug} of plan){const rq=reqFrom(j.type,j.cust),dsc=(j.description||j.work_type||'').replace(/\s+/g,' ').trim();const e=j.ex&&job(j.ex);const dept=scanDept(j.department);
+ let n=0,u=0;for(const {j,crew,fm,sug} of plan){const rq=scanReq(j),dsc=(j.description||j.work_type||'').replace(/\s+/g,' ').trim();const e=j.ex&&job(j.ex);const dept=scanDept(j.department);
   if(e){const R=[...new Set([...e.required,...rq.required])],O=[...new Set([...e.one_of,...rq.one_of])].filter(i=>R.includes(i));await q(sb.from('jobs').update({crew,foreman:fm,department:e.department||dept,required:R,one_of:O,...(j.type?{type:j.type}:{}),...(j.cust?{customer:j.cust}:{}),scan_note:note.replace('Added','Updated'),suggested_certs:[...new Set([...(e.suggested_certs||[]),...sug])].filter(c=>!R.includes(c))}).eq('id',e.id));u++}
   else{await q(sb.from('jobs').insert({company_id:cid,site:j.site||'Untitled',type:j.type||j.typeRaw||null,customer:j.cust||null,department:dept,crew,foreman:fm,...rq,scan_note:note+(dsc&&dsc!==j.type?` (board: “${dsc.slice(0,80)}”)`:''),suggested_certs:sug.filter(c=>!rq.required.includes(c))}));n++}}
  SCAN=null;await load();toast(`${n?n+' added':''}${n&&u?', ':''}${u?u+' updated':''} — check required certs on each job`);go('jobs',{},true)}
@@ -645,8 +645,10 @@ function tcSheet(){const f=SCAN.tc,j=f&&SCAN.jobs[f.i];if(!j)return'';const isC=
  ${isAdmin()&&raw&&!L.some(x=>nn(x.name)===nn(raw))?`<div class="item" role="button" onclick="tcSet('new')"><div class="grow"><div class="t" style="color:#1d4ed8">＋ Create ${isC?'customer':'job type'} “${esc(raw)}”</div><div class="sub">Created when you tap Add. Set its certs in Setup.</div></div>${j[isC?'newC':'newT']?'✔':''}</div>`:''}</div></div>`}
 function tcSet(n){const f=SCAN.tc,j=SCAN.jobs[f.i],isC=f.k==='c',L=isC?D.custs:D.types;
  if(isC){j.newC=n==='new'?j.custRaw:null;j.cust=n==='new'?j.custRaw:n==null?null:L[n].name;j.cst=j.cust?'ok':'blank'}else{j.newT=n==='new'?j.typeRaw:null;j.type=n==='new'?j.typeRaw:n==null?null:L[n].name;j.tst=j.type?'ok':'blank'}closeSheet()}
+const jibOf=j=>/\bjib\b/i.test([j.site,j.description,j.work_type,j.notes,...(j.equipment||[])].filter(Boolean).join(' '));const ginCert=()=>D.certs.find(c=>/gin\s*-?\s*poles?/i.test(c.name));
+function scanReq(j){const r=reqFrom(j.type,j.cust),g=jibOf(j)&&ginCert();if(g&&!r.required.includes(g.id))r.required=[...r.required,g.id];return r}
 function tcLine(j,i){const b=(lab,v,st,raw,k)=>{const fl=st==='check'?' <span class="pill a" style="font-size:11px;padding:1px 8px">Check</span>':'';const txt=v?`<b style="color:var(--ink)">${esc(v)}</b>${(k==='c'?j.newC:j.newT)?' <span class="sub">(new)</span>':''}${fl}`:raw?`<span style="color:#991b1b">“${esc(raw)}” not in Setup</span>`:'<span class="sub">none</span>';return `<span role="button" style="cursor:pointer;text-decoration:underline dotted #94a3b8" onclick="event.stopPropagation();SCAN.tc={i:${i},k:'${k}'};openSheet('tc')">${lab}: ${txt}</span>`};
- const r=reqFrom(j.type,j.cust).required;return `<div class="sub" style="margin:2px 0 4px;line-height:1.7">${b('Customer',j.cust,j.cst,j.custRaw,'c')} · ${b('Type',j.type,j.tst,j.typeRaw,'t')}${r.length?`<br>Requires: ${esc(r.map(i=>cert(i).name).join(', '))}`:''}</div>`}
+ const r=scanReq(j).required;return `<div class="sub" style="margin:2px 0 4px;line-height:1.7">${b('Customer',j.cust,j.cst,j.custRaw,'c')} · ${b('Type',j.type,j.tst,j.typeRaw,'t')}${r.length?`<br>Requires: ${esc(r.map(i=>cert(i).name).join(', '))}`:''}</div>`}
 
 /* ---------- backup & restore ---------- */
 const BKN='Backups include everything, including which photos belong to each cert. The photo image files stay safely in storage and aren’t inside the backup file.';
