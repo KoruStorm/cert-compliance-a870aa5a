@@ -73,7 +73,7 @@ body.hasdock{padding-bottom:calc(var(--navh,0px) + 90px)}body.sheetopen{overflow
 .pill.y{background:#fef3c7;color:#92400e}.item.bk .add{margin-left:6px}</style></head><body><div id="app"><main class="center"><div class="card">Loading…</div></main></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.min.js"></script>
 <script>
-const BUILD='20261014030000';
+const BUILD='20261014033000';
 async function checkVer(){try{const r=await fetch('version.txt?'+Date.now(),{cache:'no-store'});if(!r.ok)return;const v=(await r.text()).trim();
  if(v&&v!==BUILD&&typeof TYPING==='function'&&TYPING()){document.addEventListener('focusout',()=>setTimeout(checkVer,300),{once:true});return}
  if(v&&v!==BUILD&&sessionStorage.getItem('cc.app.reloaded')!==v){sessionStorage.setItem('cc.app.reloaded',v);const u=new URLSearchParams(location.search);u.set('v',v);location.replace(location.pathname+'?'+u.toString()+location.hash)}}catch(e){}}
@@ -566,7 +566,7 @@ async function scanFile(inp){const f=inp.files[0];inp.value='';if(!f)return;V.sh
   const q2=[...T];await Promise.all(Array.from({length:Math.min(12,q2.length)},async()=>{while(q2.length)await one(q2.shift())}));
   SCAN.secs=Math.round((Date.now()-t0)/1000);scanBuild(res)}catch(x){console.warn(x);SCAN={state:'error',msg:String(x.message||x)}}if(V.tab==='scan')render(true)}
 function scanBuild(res){SCAN.raw=res;const jobs=[];const nk=s=>nn(s).replace(/ /g,'');
- for(const r of res)for(const j of r.jobs||[]){const crew=(j.crew||[]).filter(c=>c&&c.name&&c.name.trim());if(!crew.length&&!(j.site||'').trim())continue;const names=new Set(crew.map(c=>nk(c.name)));
+ for(const r of res)for(const j of r.jobs||[]){const crew=(j.crew||[]).filter(c=>c&&c.name&&c.name.trim());const st=(j.site||'').trim(),idLike=/\d/.test(st)||st.replace(/[^A-Za-z]/g,'').length>=4;if(!crew.length&&!idLike&&!j.customer&&!j.work_type&&!(j.description||'').trim())continue;if(!st&&!crew.length)continue;const names=new Set(crew.map(c=>nk(c.name)));
   const sk=siteKey(j.site),d=jobs.find(k=>{const kn=new Set(k.crew.map(c=>nk(c.name)));const ov=[...names].filter(x=>kn.has(x)).length,mn=Math.min(names.size,kn.size),ks=siteKey(k.site),sameSite=ks&&sk&&(ks===sk||(Math.min(ks.length,sk.length)>=6&&(ks.startsWith(sk.slice(0,6))&&sk.startsWith(ks.slice(0,6)))));return sameSite?(!mn||ov>0):(mn>=2&&ov>=Math.ceil(mn/2))});
   if(d){const have=new Set(d.crew.map(c=>nk(c.name)));if(crew.length>d.crew.length)Object.assign(d,{...j,crew:[...crew,...d.crew.filter(c=>!names.has(nk(c.name)))]});else d.crew.push(...crew.filter(c=>!have.has(nk(c.name))));d.equipment=[...new Set([...(d.equipment||[]),...(j.equipment||[])])]}else jobs.push({...j,crew})}
  const used={};SCAN.date=today();
@@ -615,9 +615,9 @@ function alMatch(text,list,AL){const t=' '+nn(text)+' ';if(!t.trim())return null
  let e=names.find(o=>o.n&&(t.includes(' '+o.n+' ')));if(e)return e.x;
  for(const g of AL){if(!g.some(a=>t.includes(' '+nn(a)+' ')))continue;e=names.find(o=>g.map(nn).includes(o.n)||g.some(a=>nn(a).length>3&&o.n.includes(nn(a))));if(e)return e.x}
  const w=nn(text).split(' ')[0];e=w&&w.length>3&&names.find(o=>sim(w,o.n)>=.85);return e?e.x:null}
-function scanTC(j){const ctext=[j.customer,j.site,j.description].filter(Boolean).join(' '),ttext=[j.work_type,j.description].filter(Boolean).join(' ');
+function scanTC(j){const ctext=[j.customer,j.site,j.description].filter(Boolean).join(' '),ttext=[j.work_type,j.description,j.site].filter(Boolean).join(' ');
  const c=alMatch(j.customer||'',D.custs,CUST_AL)||alMatch(ctext,D.custs,CUST_AL);
- let t=alMatch(j.work_type||'',D.types,TYPE_AL)||alMatch(ttext,D.types,TYPE_AL),tst=t?'ok':'none';if(t&&!nn(ttext).split(' ').some(w=>w===nn(t.name)||(nn(t.name).length>=4&&w.length>=4&&(w.startsWith(nn(t.name))||nn(t.name).startsWith(w)))))tst='check';
+ let t=alMatch(j.work_type||'',D.types,TYPE_AL)||alMatch([j.work_type,j.description].filter(Boolean).join(' '),D.types,TYPE_AL)||alMatch(j.site||'',D.types,TYPE_AL),tst=t?'ok':'none';if(t&&!nn(ttext).split(' ').some(w=>w===nn(t.name)||(nn(t.name).length>=4&&w.length>=4&&(w.startsWith(nn(t.name))||nn(t.name).startsWith(w)))))tst='check';
  if(!t){const s=nn(ttext);for(const [re,ns] of TYPE_HINT)if(re.test(s)){t=D.types.find(x=>ns.includes(nn(x.name)));if(t)break}
   if(!t){const d=scanDept(j.department);t=d&&d!=='tower'&&D.types.find(x=>nn(x.name)===d)}if(t)tst='check'}
  let cname=j.customer||'';const g=CUST_AL.find(g=>g.includes(nn(cname)));if(g&&g[0].length>3&&g[0]!==nn(cname))cname=g[0].replace(/\b\w/g,m=>m.toUpperCase()).replace('T Mobile','T-Mobile');
