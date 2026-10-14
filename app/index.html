@@ -73,7 +73,7 @@ body.hasdock{padding-bottom:calc(var(--navh,0px) + 90px)}body.sheetopen{overflow
 .pill.y{background:#fef3c7;color:#92400e}.item.bk .add{margin-left:6px}</style></head><body><div id="app"><main class="center"><div class="card">Loading…</div></main></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.min.js"></script>
 <script>
-const BUILD='20261014173000';
+const BUILD='20261014180000';
 async function checkVer(){try{const r=await fetch('version.txt?'+Date.now(),{cache:'no-store'});if(!r.ok)return;const v=(await r.text()).trim();
  if(v&&v!==BUILD&&typeof TYPING==='function'&&TYPING()){document.addEventListener('focusout',()=>setTimeout(checkVer,300),{once:true});return}
  if(v&&v!==BUILD&&sessionStorage.getItem('cc.app.reloaded')!==v){sessionStorage.setItem('cc.app.reloaded',v);const u=new URLSearchParams(location.search);u.set('v',v);location.replace(location.pathname+'?'+u.toString()+location.hash)}}catch(e){}}
@@ -249,9 +249,9 @@ async function clearJobs(){const n=D.jobs.length,c=D.jobs.reduce((a,j)=>a+j.crew
  const {data,error}=await sb.rpc('clear_jobs',{cid});if(error)return toast(error.message);await load();toast(`Cleared ${data.deleted} job${data.deleted==1?'':'s'} — backup saved`);render(true)}
 function newJobView(){const o=(arr,ph)=>`<option value="">${ph}</option>`+arr.map(x=>`<option>${esc(x.name)}</option>`).join('');
  return `<button class="back" onclick="goBack('jobs')">← Jobs</button><div class="card"><h2>New job</h2><label>Site<input id="js" placeholder="Site ID, e.g. A1N0001"></label><label>Job type<select id="jt" onchange="prevNew()">${o(D.types,'Choose a job type')}</select></label><label>Customer<select id="jcu" onchange="prevNew()">${o(D.custs,'No customer')}</select></label><label>Department</label><div id="jdept">${deptChips(null,'newDept')}</div><div class="sub" style="margin:6px 0 12px">Crew search shows this department first.</div><div id="prev"></div><button class="btn" onclick="busy(this,addJob)">Create job</button></div>`}
-function reqFrom(t,c){const r=new Set(),o=new Set();[D.types.find(x=>x.name===t),D.custs.find(x=>x.name===c)].filter(Boolean).forEach(x=>{x.certs.forEach(i=>r.add(i));x.one_of.forEach(i=>o.add(i))});return{required:[...r].filter(cert),one_of:[...o].filter(i=>r.has(i))}}
-function prevNew(){const r=reqFrom($('#jt').value,$('#jcu').value);$('#prev').innerHTML=r.required.length?`<div class="note"><b>Required certs:</b> ${r.required.map(i=>esc(cert(i).name)+(r.one_of.includes(i)?' (1+)':'')).join(', ')}</div>`:''}
-async function addJob(){const t=$('#jt').value,c=$('#jcu').value,s=$('#js').value.trim();if(!s&&!t)return toast('Enter a site or job type');const r=reqFrom(t,c);
+function reqFrom(t,c,dept){const r=new Set(),o=new Set();[D.types.find(x=>x.name===t),D.custs.find(x=>x.name===c)].filter(Boolean).forEach(x=>{x.certs.forEach(i=>r.add(i));x.one_of.forEach(i=>o.add(i))});const ce=['civil','electrical'].includes(String(t||'').toLowerCase())||['civil','electrical'].includes(dept);const keep=i=>cert(i)&&!(ce&&isGin(i));return{required:[...r].filter(keep),one_of:[...o].filter(i=>r.has(i)&&keep(i))}}
+function prevNew(){const r=reqFrom($('#jt').value,$('#jcu').value,($('#jdept .big3')||{dataset:{}}).dataset.val);$('#prev').innerHTML=r.required.length?`<div class="note"><b>Required certs:</b> ${r.required.map(i=>esc(cert(i).name)+(r.one_of.includes(i)?' (1+)':'')).join(', ')}</div>`:''}
+async function addJob(){const t=$('#jt').value,c=$('#jcu').value,s=$('#js').value.trim();if(!s&&!t)return toast('Enter a site or job type');const r=reqFrom(t,c,($('#jdept .big3')||{dataset:{}}).dataset.val);
  const [j]=await q(sb.from('jobs').insert({company_id:cid,site:s,type:t,customer:c,department:($('#jdept .big3')||{dataset:{}}).dataset.val||null,...r}).select(),'Job created — now add crew');await load();go('job',{id:j.id},true);setTimeout(()=>{const i=$('#crewIn');if(i)i.focus()},100)}
 function tgl(k){V.ex=V.ex===k?null:k;render(true)}
 function xrow(k,title,sub,body){const o=V.ex===k;return `<div class="item" role="button" aria-expanded="${o}" onclick="tgl('${k}')"><div class="grow"><div class="t">${title}</div><div class="sub">${sub}</div></div><span class="chev">${o?'⌄':'›'}</span></div>${o?`<div class="exp">${body}</div>`:''}`}
@@ -262,7 +262,9 @@ function certChips(sel,one,fn,ed){return D.certs.map(c=>{const on=sel.includes(c
 const legend=`<div class="note"><b>Everyone</b> = each crew member needs it · <b style="color:#7c3aed">1+</b> = at least one person. Tap again to remove.</div>`;
 function applyMode(x,c,mode,reqF){const on=x[reqF].includes(c),o=on&&x.one_of.includes(c),cur=on?(o?'one':'all'):'off',nw=cur===mode?'off':mode;
  x[reqF]=nw==='off'?x[reqF].filter(i=>i!==c):[...new Set([...x[reqF],c])];x.one_of=nw==='one'?[...new Set([...x.one_of,c])]:x.one_of.filter(i=>i!==c);x.one_of=x.one_of.filter(i=>x[reqF].includes(i))}
-function jobReq(c,mode){const j=job(V.id);if(!j)return;applyMode(j,c,mode,'required');render();saveRow('jobs',j.id,['required','one_of'])}
+const isCE=j=>['civil','electrical'].includes(String(j.type||'').toLowerCase())||['civil','electrical'].includes(j.department);const isGin=c=>cert(c)&&/gin\s*-?\s*poles?/i.test(cert(c).name);
+function ginBlock(j,c){if(isCE(j)&&isGin(c)){toast('Civil and Electrical jobs never need Gin Pole');render(true);return true}return false}
+function jobReq(c,mode){const j=job(V.id);if(!j)return;if(!j.required.includes(c)&&ginBlock(j,c))return;applyMode(j,c,mode,'required');render();saveRow('jobs',j.id,['required','one_of'])}
 function listReq(c,mode){const x=cur();if(!x)return;applyMode(x,c,mode,'certs');render();saveRow(TBL[V.k],x.id,['certs','one_of'])}
 function foremanCard(list,phoneOf){if(!list.length)return `<div class="fmc none"><div class="fml">Foreman</div><div class="t">⚠ No foreman assigned</div><div class="sub">Set a crew member's position to Foreman.</div></div>`;
  return `<div class="fmc"><div class="fml">Foreman${list.length>1?'s':''}</div>${list.map(f=>{const ph=phoneOf(f),tel=String(ph||'').replace(/[^\d+]/g,'');return `<div class="fmr"><div class="grow"><div class="t" style="font-size:18px">${esc(f.name)}</div>${ph?`<div class="sub">${esc(ph)}</div>`:''}</div>${tel?`<a class="add" href="tel:${tel}">📞 Call</a><a class="add sec" href="sms:${tel}">💬 Text</a>`:''}</div>`}).join('')}</div>`}
@@ -332,7 +334,7 @@ function sugHtml(j){const s=(V.cq||'').toLowerCase(),c=D.people.filter(p=>!j.cre
 async function crewAdd(id,pid){const oj=jobOf(pid);if(oj&&oj.id!==id){if(!confirm(`${person(pid).name} is on ${oj.site||oj.type}. Move them here?`))return;oj.crew=oj.crew.filter(x=>x!==pid);saveRow('jobs',oj.id,['crew'])}
  const j=job(id);if(!j.crew.includes(pid))j.crew=[...j.crew,pid];render(true);saveRow('jobs',id,['crew'])}
 async function jobSet(id,patch){await q(sb.from('jobs').update(patch).eq('id',id),'Saved');await load();render()}
-async function reqTog(id,c,on){const j=job(id);j.required=on?[...new Set([...j.required,c])]:j.required.filter(x=>x!==c);j.one_of=j.one_of.filter(x=>j.required.includes(x));render();saveRow('jobs',id,['required','one_of'])}
+async function reqTog(id,c,on){const j=job(id);if(on&&ginBlock(j,c))return;j.required=on?[...new Set([...j.required,c])]:j.required.filter(x=>x!==c);j.one_of=j.one_of.filter(x=>j.required.includes(x));render();saveRow('jobs',id,['required','one_of'])}
 async function oneTog(id,c,on){const j=job(id);j.one_of=on?[...new Set([...j.one_of,c])]:j.one_of.filter(x=>x!==c);render();saveRow('jobs',id,['required','one_of'])}
 async function jobDel(id){if(!confirm('Delete this job?'))return;await q(sb.from('jobs').delete().eq('id',id),'Job deleted');await load();go('jobs')}
 async function crewDel(id,pid){const j=job(id);j.crew=j.crew.filter(x=>x!==pid);render();saveRow('jobs',id,['crew'])}
