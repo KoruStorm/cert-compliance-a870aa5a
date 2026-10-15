@@ -73,7 +73,7 @@ body.hasdock{padding-bottom:calc(var(--navh,0px) + 90px)}body.sheetopen{overflow
 .pill.y{background:#fef3c7;color:#92400e}.item.bk .add{margin-left:6px}</style></head><body><div id="app"><main class="center"><div class="card">Loading…</div></main></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.min.js"></script>
 <script>
-const BUILD='20261015000000';
+const BUILD='20261015010000';
 async function checkVer(){try{const r=await fetch('version.txt?'+Date.now(),{cache:'no-store'});if(!r.ok)return;const v=(await r.text()).trim();
  if(v&&v!==BUILD&&typeof TYPING==='function'&&TYPING()){document.addEventListener('focusout',()=>setTimeout(checkVer,300),{once:true});return}
  if(v&&v!==BUILD&&sessionStorage.getItem('cc.app.reloaded')!==v){sessionStorage.setItem('cc.app.reloaded',v);const u=new URLSearchParams(location.search);u.set('v',v);location.replace(location.pathname+'?'+u.toString()+location.hash)}}catch(e){}}
@@ -583,13 +583,20 @@ function tilesOf(cv){const W=cv.width,H=cv.height;if(W*H<2.5e6)return[[0,0,W,H]]
  const ax=(T,S,N)=>{const a=[];for(let x=0;x+T<N;x+=S)a.push(x);a.push(Math.max(0,N-T));return[...new Set(a)]};const out=[];for(const y of ax(TH,sy,H))for(const x of ax(TW,sx,W))out.push([x,y,TW,TH]);
  const BW=Math.round(W*.5),BH=Math.round(H*.45),bx=Math.round(W*.25),by=Math.round(H*.275);for(const y of ax(BH,by,H))for(const x of ax(BW,bx,W))out.push([x,y,BW,BH]);return out}
 async function scanFile(inp){const f=inp.files[0];inp.value='';if(!f)return;V.sheet=null;SCAN={state:'reading',name:f.name||'photo',done:0,total:0};go('scan',{},true);const t0=Date.now();
- try{const cv=await toCanvas(f),T=tilesOf(cv);SCAN.total=T.length;render(true);const res=[];let k=0;
-  const one=async([x,y,w,h])=>{const c=document.createElement('canvas');c.width=w;c.height=h;c.getContext('2d').drawImage(cv,x,y,w,h,0,0,w,h);const b64=c.toDataURL('image/jpeg',.86).split(',')[1];
+ try{const cv=await toCanvas(f),T=tilesOf(cv);SCAN.total=T.length;render(true);const res=[],fail=[],took=[];let hedges=0,over=0;
+  // Pieces are shrunk to <=1600px and q.75 before upload (the reader sees the same detail; ~45% fewer bytes). All pieces go in parallel (HTTP/2), and
+  // a duplicate 'hedge' request is only sent when the network is clearly fast enough (adaptive delay, max 6), never doubling uploads.
+  const MX=1600,LIM=40,DEADLINE=75000;
+  const enc=([x,y,w,h])=>{const s=Math.min(1,MX/Math.max(w,h)),c=document.createElement('canvas');c.width=Math.round(w*s);c.height=Math.round(h*s);c.getContext('2d').drawImage(cv,x,y,w,h,0,0,c.width,c.height);return c.toDataURL('image/jpeg',.75).split(',')[1]};
+  const one=async t=>{const b64=enc(t),ts=Date.now();
    const call=()=>sb.functions.invoke('scan-schedule',{body:{cid,image:b64,mime:'image/jpeg'}}).then(({data,error})=>{if(error||!data||data.error)throw new Error((data&&data.error)||'The reader didn\u2019t respond');return data});
-   const hedged=()=>new Promise((ok,no)=>{let done=0,fails=0,n=1;const go=()=>call().then(d=>{if(!done){done=1;ok(d)}},e=>{if(++fails>=n&&!done)no(e)});go();setTimeout(()=>{if(!done){n++;go()}},7000)});
-   try{res.push(await hedged())}catch(e){try{res.push(await call())}catch(e2){fail.push(e2)}}SCAN.done++;if(V.tab==='scan')render()};
-  const fail=[];await Promise.all(T.map(one));if(fail.length>T.length*.2)throw fail[0];
-  SCAN.secs=Math.round((Date.now()-t0)/1000);scanBuild(res)}catch(x){console.warn(x);SCAN={state:'error',msg:String(x.message||x)}}if(V.tab==='scan')render(true)}
+   const hedged=()=>new Promise((ok,no)=>{let done=0,fails=0,n=1;const go=()=>call().then(d=>{if(!done){done=1;ok(d)}},e=>{if(++fails>=n&&!done)no(e)});go();
+    const med=took.length>=3?[...took].sort((a,b)=>a-b)[took.length>>1]:0;if(med&&med<12000&&hedges<6)setTimeout(()=>{if(!done&&!over&&hedges<6){hedges++;n++;go()}},Math.max(7000,med*2.5))});
+   try{res.push(await hedged())}catch(e){if(!over)try{res.push(await call())}catch(e2){fail.push(e2)}else fail.push(e)}took.push(Date.now()-ts);SCAN.done++;if(V.tab==='scan'&&!over)render()};
+  let qi=0;const worker=async()=>{while(qi<T.length&&!over)await one(T[qi++])};
+  await Promise.race([Promise.all(Array.from({length:Math.min(LIM,T.length)},worker)),new Promise(r=>setTimeout(r,DEADLINE))]);
+  over=1;const got=res.length;if(got<T.length*.6)throw fail[0]||new Error('The reader is taking too long. Check your connection and try again.');
+  SCAN.partial=got<T.length?`${got} of ${T.length}`:'';SCAN.secs=Math.round((Date.now()-t0)/1000);scanBuild(res.slice())}catch(x){console.warn(x);SCAN={state:'error',msg:String(x.message||x)}}if(V.tab==='scan')render(true)}
 function scanBuild(res){SCAN.raw=res;const jobs=[];const nk=s=>nn(s).replace(/ /g,'');
  for(const r of res)for(const j of r.jobs||[]){const crew=(j.crew||[]).filter(c=>c&&c.name&&c.name.trim());const st=(j.site||'').trim(),idLike=/\d/.test(st)||/\brf\b/i.test(st)||st.replace(/[^A-Za-z]/g,'').length>=4;if(!crew.length&&!idLike&&!j.customer&&!j.work_type&&!(j.description||'').trim())continue;if(/^vehicle\s*#/i.test(st)||(!crew.length&&!/\d/.test(st)))continue;if(!st&&!crew.length)continue;const names=new Set(crew.map(c=>nk(c.name)));
   const sk=siteKey(j.site),d=jobs.find(k=>{const kn=new Set(k.crew.map(c=>nk(c.name)));const ov=[...names].filter(x=>kn.has(x)).length,mn=Math.min(names.size,kn.size),ks=siteKey(k.site),sameSite=ks&&sk&&(ks===sk||(Math.min(ks.length,sk.length)>=6&&(ks.startsWith(sk.slice(0,6))&&sk.startsWith(ks.slice(0,6)))));return sameSite?(!mn||ov>0):(mn>=2&&ov>=Math.ceil(mn/2))});
@@ -612,11 +619,11 @@ function scanStatus(){SCAN.jobs.forEach(j=>{const ids=j.crew.filter(c=>c.pid&&!c
  if(!e)j.tag='new';else{const same=ids.length===e.crew.length&&ids.every(i=>e.crew.includes(i));j.tag=same?'same':'update';if(same&&j.on===true&&!j.touched)j.on=false}})}
 const scanDept=d=>d==='maintenance'?'tower':['tower','electrical','civil'].includes(d)?d:null;
 function scanView(){const S=SCAN;if(!S)return jobsView();
- if(S.state==='reading')return `<button class="back" onclick="goBack('jobs')">← Jobs</button><h1>Reading schedule…</h1><div class="card" style="text-align:center;padding:26px 16px"><div class="spin" style="width:28px;height:28px;margin:0 auto 12px"></div><div class="t">${esc(S.name)}</div><div class="sub">${S.total?`Reading piece ${S.done} of ${S.total}`:'Preparing the image…'}</div><p class="sub" style="margin-top:12px">This usually takes 10–30 seconds. Nothing is saved yet.</p></div>`;
+ if(S.state==='reading')return `<button class="back" onclick="goBack('jobs')">← Jobs</button><h1>Reading schedule…</h1><div class="card" style="text-align:center;padding:26px 16px"><div class="spin" style="width:28px;height:28px;margin:0 auto 12px"></div><div class="t">${esc(S.name)}</div><div class="sub">${S.total?`Reading piece ${S.done} of ${S.total}`:'Preparing the image…'}</div>${S.total?`<div style="height:6px;background:#e7e9ee;border-radius:3px;margin:12px auto 0;max-width:260px;overflow:hidden"><div style="height:100%;width:${Math.round(100*S.done/S.total)}%;background:#5b6b86;transition:width .3s"></div></div>`:''}<p class="sub" style="margin-top:12px">This usually takes 10–30 seconds. Nothing is saved yet.</p></div>`;
  if(S.state==='error')return `<button class="back" onclick="goBack('jobs')">← Jobs</button><h1>Couldn\u2019t read it</h1><div class="note" style="background:#fee2e2;color:#991b1b">${esc(S.msg)}</div><button class="btn" onclick="go('jobs',{sheet:'scan'},true)">Try again</button>`;
  const on=S.jobs.filter(j=>j.on),crewN=S.jobs.reduce((a,j)=>a+j.crew.length,0),busyOf=pid=>D.jobs.find(x=>x.crew.includes(pid));
  const tag={new:'<span class="pill b" style="flex:none">New</span>',update:'<span class="pill a" style="flex:none">Update</span>',same:'<span class="pill n" style="flex:none">Up to date</span>'};
- return `<button class="back" onclick="goBack('jobs')">← Jobs</button><h1>Review schedule</h1><div class="note" style="margin-top:6px">✔ Read <b style="word-break:break-all">${esc(S.name.length>40?S.name.slice(0,18)+'…'+S.name.slice(-14):S.name)}</b> · found ${S.jobs.length} jobs and ${crewN} crew${S.secs?` in ${S.secs}s`:''}. Nothing is saved until you tap Add.</div>
+ return `<button class="back" onclick="goBack('jobs')">← Jobs</button><h1>Review schedule</h1><div class="note" style="margin-top:6px">✔ Read <b style="word-break:break-all">${esc(S.name.length>40?S.name.slice(0,18)+'…'+S.name.slice(-14):S.name)}</b> · found ${S.jobs.length} jobs and ${crewN} crew${S.secs?` in ${S.secs}s`:''}. Nothing is saved until you tap Add.</div>${S.partial?`<div class="note" style="margin-top:6px">Only ${S.partial} pieces came back in time (slow connection?), so some rows may be missing. Re-scan to fill gaps.</div>`:''}
  <div class="sub" style="margin:10px 2px 6px;font-weight:700;letter-spacing:.04em">FOUND JOBS · ${S.jobs.length}</div>
  ${S.jobs.map((j,i)=>{const e=j.ex&&job(j.ex);const meta=[deptName(scanDept(j.department)),e&&j.tag==='update'?'updates existing job':'',(j.description||'').split('\n')[0]].filter(Boolean).join(' · ');
   return `<div class="card" style="padding:12px 14px;margin-bottom:10px"><div class="row" style="align-items:flex-start;gap:10px"><input type="checkbox" ${j.on?'checked':''} aria-label="Include ${esc(j.site)}" style="width:22px;height:22px;margin:2px 0 0;flex:none" onchange="SCAN.jobs[${i}].on=this.checked;SCAN.jobs[${i}].touched=1;render(true)"><div class="grow" style="min-width:0"><div class="row" style="align-items:center;gap:8px"><div class="t grow">${esc(j.site||'Untitled')}${j.siteCheck&&j.ex?` <span class="sub" style="font-weight:400">→ ${esc(job(j.ex).site)}</span> <span class="pill a" style="font-size:11px;padding:1px 8px">Check match</span>`:''}</div>${tag[j.tag]}</div>${meta?`<div class="sub">${esc(meta)}</div>`:''}${tcLine(j,i)}
