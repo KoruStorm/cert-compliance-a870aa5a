@@ -73,7 +73,7 @@ body.hasdock{padding-bottom:calc(var(--navh,0px) + 90px)}body.sheetopen{overflow
 .pill.y{background:#fef3c7;color:#92400e}.item.bk .add{margin-left:6px}</style></head><body><div id="app"><main class="center"><div class="card">Loading…</div></main></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.min.js"></script>
 <script>
-const BUILD='20261014190000';
+const BUILD='20261015000000';
 async function checkVer(){try{const r=await fetch('version.txt?'+Date.now(),{cache:'no-store'});if(!r.ok)return;const v=(await r.text()).trim();
  if(v&&v!==BUILD&&typeof TYPING==='function'&&TYPING()){document.addEventListener('focusout',()=>setTimeout(checkVer,300),{once:true});return}
  if(v&&v!==BUILD&&sessionStorage.getItem('cc.app.reloaded')!==v){sessionStorage.setItem('cc.app.reloaded',v);const u=new URLSearchParams(location.search);u.set('v',v);location.replace(location.pathname+'?'+u.toString()+location.hash)}}catch(e){}}
@@ -580,15 +580,18 @@ async function toCanvas(f){const MAX=4800;let cv=document.createElement('canvas'
   const doc=await pdfjs.getDocument({data:await f.arrayBuffer()}).promise,pg=await doc.getPage(1),v1=pg.getViewport({scale:1}),sc=Math.min(4,MAX/Math.max(v1.width,v1.height)),vp=pg.getViewport({scale:sc});cv.width=Math.round(vp.width);cv.height=Math.round(vp.height);await pg.render({canvasContext:cv.getContext('2d'),viewport:vp}).promise;return cv}
  const bm=await createImageBitmap(f).catch(async()=>{const u=URL.createObjectURL(f);const im=await new Promise((r,j)=>{const i=new Image();i.onload=()=>r(i);i.onerror=j;i.src=u});return im});const w=bm.width||bm.naturalWidth,h=bm.height||bm.naturalHeight,sc=Math.min(1,MAX/Math.max(w,h));cv.width=Math.round(w*sc);cv.height=Math.round(h*sc);cv.getContext('2d').drawImage(bm,0,0,cv.width,cv.height);return cv}
 function tilesOf(cv){const W=cv.width,H=cv.height;if(W*H<2.5e6)return[[0,0,W,H]];const TW=Math.round(W*.38),TH=Math.round(H*.35),sx=Math.round(W*.16),sy=Math.round(H*.21);
- const ax=(T,S,N)=>{const a=[];for(let x=0;x+T<N;x+=S)a.push(x);a.push(Math.max(0,N-T));return[...new Set(a)]};const out=[];for(const y of ax(TH,sy,H))for(const x of ax(TW,sx,W))out.push([x,y,TW,TH]);return out}
+ const ax=(T,S,N)=>{const a=[];for(let x=0;x+T<N;x+=S)a.push(x);a.push(Math.max(0,N-T));return[...new Set(a)]};const out=[];for(const y of ax(TH,sy,H))for(const x of ax(TW,sx,W))out.push([x,y,TW,TH]);
+ const BW=Math.round(W*.5),BH=Math.round(H*.45),bx=Math.round(W*.25),by=Math.round(H*.275);for(const y of ax(BH,by,H))for(const x of ax(BW,bx,W))out.push([x,y,BW,BH]);return out}
 async function scanFile(inp){const f=inp.files[0];inp.value='';if(!f)return;V.sheet=null;SCAN={state:'reading',name:f.name||'photo',done:0,total:0};go('scan',{},true);const t0=Date.now();
  try{const cv=await toCanvas(f),T=tilesOf(cv);SCAN.total=T.length;render(true);const res=[];let k=0;
   const one=async([x,y,w,h])=>{const c=document.createElement('canvas');c.width=w;c.height=h;c.getContext('2d').drawImage(cv,x,y,w,h,0,0,w,h);const b64=c.toDataURL('image/jpeg',.86).split(',')[1];
-   for(let a=0;a<2;a++){const {data,error}=await sb.functions.invoke('scan-schedule',{body:{cid,image:b64,mime:'image/jpeg'}});if(!error&&data&&!data.error){res.push(data);break}if(a)throw new Error((data&&data.error)||'The reader didn\u2019t respond')}SCAN.done++;if(V.tab==='scan')render()};
-  const q2=[...T];await Promise.all(Array.from({length:Math.min(12,q2.length)},async()=>{while(q2.length)await one(q2.shift())}));
+   const call=()=>sb.functions.invoke('scan-schedule',{body:{cid,image:b64,mime:'image/jpeg'}}).then(({data,error})=>{if(error||!data||data.error)throw new Error((data&&data.error)||'The reader didn\u2019t respond');return data});
+   const hedged=()=>new Promise((ok,no)=>{let done=0,fails=0,n=1;const go=()=>call().then(d=>{if(!done){done=1;ok(d)}},e=>{if(++fails>=n&&!done)no(e)});go();setTimeout(()=>{if(!done){n++;go()}},7000)});
+   try{res.push(await hedged())}catch(e){try{res.push(await call())}catch(e2){fail.push(e2)}}SCAN.done++;if(V.tab==='scan')render()};
+  const fail=[];await Promise.all(T.map(one));if(fail.length>T.length*.2)throw fail[0];
   SCAN.secs=Math.round((Date.now()-t0)/1000);scanBuild(res)}catch(x){console.warn(x);SCAN={state:'error',msg:String(x.message||x)}}if(V.tab==='scan')render(true)}
 function scanBuild(res){SCAN.raw=res;const jobs=[];const nk=s=>nn(s).replace(/ /g,'');
- for(const r of res)for(const j of r.jobs||[]){const crew=(j.crew||[]).filter(c=>c&&c.name&&c.name.trim());const st=(j.site||'').trim(),idLike=/\d/.test(st)||/\brf\b/i.test(st)||st.replace(/[^A-Za-z]/g,'').length>=4;if(!crew.length&&!idLike&&!j.customer&&!j.work_type&&!(j.description||'').trim())continue;if(!st&&!crew.length)continue;const names=new Set(crew.map(c=>nk(c.name)));
+ for(const r of res)for(const j of r.jobs||[]){const crew=(j.crew||[]).filter(c=>c&&c.name&&c.name.trim());const st=(j.site||'').trim(),idLike=/\d/.test(st)||/\brf\b/i.test(st)||st.replace(/[^A-Za-z]/g,'').length>=4;if(!crew.length&&!idLike&&!j.customer&&!j.work_type&&!(j.description||'').trim())continue;if(/^vehicle\s*#/i.test(st)||(!crew.length&&!/\d/.test(st)))continue;if(!st&&!crew.length)continue;const names=new Set(crew.map(c=>nk(c.name)));
   const sk=siteKey(j.site),d=jobs.find(k=>{const kn=new Set(k.crew.map(c=>nk(c.name)));const ov=[...names].filter(x=>kn.has(x)).length,mn=Math.min(names.size,kn.size),ks=siteKey(k.site),sameSite=ks&&sk&&(ks===sk||(Math.min(ks.length,sk.length)>=6&&(ks.startsWith(sk.slice(0,6))&&sk.startsWith(ks.slice(0,6)))));return sameSite?(!mn||ov>0):(mn>=2&&ov>=Math.ceil(mn/2))});
   if(d){const have=new Set(d.crew.map(c=>nk(c.name)));if(crew.length>d.crew.length)Object.assign(d,{...j,crew:[...crew,...d.crew.filter(c=>!names.has(nk(c.name)))]});else d.crew.push(...crew.filter(c=>!have.has(nk(c.name))));d.equipment=[...new Set([...(d.equipment||[]),...(j.equipment||[])])]}else jobs.push({...j,crew})}
  const used={};SCAN.date=today();
@@ -598,12 +601,13 @@ function scanBuild(res){SCAN.raw=res;const jobs=[];const nk=s=>nn(s).replace(/ /
  SCAN.jobs.forEach(j=>{j.crew.forEach(c=>{if(!c.pid)return;if(used[c.pid]&&used[c.pid]!==j){c.dup=used[c.pid].site;return}used[c.pid]=j})});scanStatus();SCAN.state='review'}
 const confKey=k=>k.replace(/O/g,'0').replace(/[IL]/g,'1').replace(/S/g,'5').replace(/B/g,'8');
 function siteRel(a,b){if(!a||!b)return 0;if(a===b)return 2;const ca=confKey(a),cb=confKey(b);if(ca===cb)return 1;if(Math.min(a.length,b.length)>=5&&lev(ca,cb)<=1)return 1;const [s1,l1]=a.length<b.length?[a,b]:[b,a];if(s1.length>=3&&l1.startsWith(s1))return 1;if(s1.length>=5&&l1.includes(s1))return 1;return 0}
-function scanMatch(L){const pairs=[];L.forEach((j,i)=>{const k=siteKey(j.site),ids=new Set(j.crew.map(c=>c.pid).filter(Boolean));D.jobs.forEach(e=>{const r=siteRel(k,siteKey(e.site));if(!r)return;const ov=e.crew.filter(x=>ids.has(x)).length;pairs.push({i,e,r,ov})})});
+function scanMatch(L){const pairs=[];L.forEach((j,i)=>{const k=siteKey(j.site),ids=new Set(j.crew.map(c=>c.pid).filter(Boolean));D.jobs.forEach(e=>{const r=siteRel(k,siteKey(e.site));const ov=e.crew.filter(x=>ids.has(x)).length;if(!r&&!(ov&&ov>=Math.max(1,Math.ceil(Math.min(ids.size,e.crew.length)/2))))return;pairs.push({i,e,r,ov})})});
  const nS=k=>L.filter(j=>siteKey(j.site)===k).length,nE=k=>D.jobs.filter(e=>siteKey(e.site)===k).length;
  pairs.sort((a,b)=>b.ov-a.ov||b.r-a.r);const ui=new Set(),ue=new Set();
  for(const p of pairs){if(ui.has(p.i)||ue.has(p.e.id))continue;const j=L[p.i],k=siteKey(j.site);
   const shared=p.r===2&&(nS(k)>1||nE(k)>1);if(shared&&!p.ov)continue;if(p.r===1&&!p.ov&&L.some((x,ix)=>ix!==p.i&&siteRel(siteKey(x.site),siteKey(p.e.site))===2))continue;
-  j.ex=p.e.id;j.siteCheck=p.r===1;ui.add(p.i);ue.add(p.e.id)}}
+  j.ex=p.e.id;j.siteCheck=p.r<2;ui.add(p.i);ue.add(p.e.id)}
+ L.forEach(j=>{if(!j.ex&&!j.crew.length)j.on=false})}
 function scanStatus(){SCAN.jobs.forEach(j=>{const ids=j.crew.filter(c=>c.pid&&!c.dup).map(c=>c.pid),e=j.ex&&job(j.ex);
  if(!e)j.tag='new';else{const same=ids.length===e.crew.length&&ids.every(i=>e.crew.includes(i));j.tag=same?'same':'update';if(same&&j.on===true&&!j.touched)j.on=false}})}
 const scanDept=d=>d==='maintenance'?'tower':['tower','electrical','civil'].includes(d)?d:null;
