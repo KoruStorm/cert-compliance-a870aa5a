@@ -100,7 +100,7 @@ html.dark .seg{background:var(--bg)}html.dark .seg button.on{background:#f1f5f9;
 </style></head><body><div id="app"><main class="center"><div class="card">Loading…</div></main></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.min.js"></script>
 <script>
-const BUILD='20261015020000';
+const BUILD='20261015030000';
 async function checkVer(){try{const r=await fetch('version.txt?'+Date.now(),{cache:'no-store'});if(!r.ok)return;const v=(await r.text()).trim();
  if(v&&v!==BUILD&&typeof TYPING==='function'&&TYPING()){document.addEventListener('focusout',()=>setTimeout(checkVer,300),{once:true});return}
  if(v&&v!==BUILD&&sessionStorage.getItem('cc.app.reloaded')!==v){sessionStorage.setItem('cc.app.reloaded',v);const u=new URLSearchParams(location.search);u.set('v',v);location.replace(location.pathname+'?'+u.toString()+location.hash)}}catch(e){}}
@@ -337,7 +337,7 @@ function statusBanner(j){const g=gaps(j),t=teamGaps(j),L=[];if(j.crew.length<2)L
  if(!j.required.length)return `<div class="status n"><span style="font-size:20px">○</span><div>No certs set<small>Open “Required certs” below to choose them</small></div></div>`;
  return `<div class="status g"><span style="font-size:20px">✔</span><div>Compliant<small>All ${j.crew.length} crew hold required certs</small></div></div>`}
 const when=d=>{const x=new Date(d),t=x.toLocaleTimeString([],{hour:'numeric',minute:'2-digit'});return x.toDateString()===new Date().toDateString()?'today '+t:x.toLocaleDateString(undefined,{month:'short',day:'numeric'})+' '+t};
-function jobView(){const j=job(V.id);if(!j)return jobsView();const ed=canEdit(),cr=crewSort(j.crew.map(person).filter(Boolean)),n=cr.length;
+function jobView(){const j=job(V.id);if(!j)return jobsView();const ed=canEdit(),fm0=foremen(j).map(p=>p.id),cr=crewSort(j.crew.map(person).filter(Boolean)).sort((x,y)=>(fm0.includes(x.id)?0:1)-(fm0.includes(y.id)?0:1)),n=cr.length;
  const hist=D.audit.filter(a=>a.row_id===j.id).slice(0,10);
  const reqNames=j.required.filter(cert).map(c=>esc(cert(c).name)+(isOne(j,c)?' (1+)':'')).join(' · ')||'None yet — tap to choose';
  const sel=(f,list,ph)=>`<select ${ed?'':'disabled'} onchange="jobSet('${j.id}',{${f}:this.value})"><option value="">${ph}</option>${list.map(x=>`<option ${x.name===j[f]?'selected':''}>${esc(x.name)}</option>`).join('')}</select>`;
@@ -581,7 +581,7 @@ function mineView(){const pid=D.people[0]&&D.people[0].id,j=D.jobs[0];
  return `<h1>Hi ${esc(D.people[0].name.split(' ')[0])}</h1>${j?`<div class="card"><div class="sub">My job</div><div class="big">${esc(j.site||j.type)}</div><div class="sub" style="font-size:15px">${esc([j.site?j.type:'',j.customer].filter(Boolean).join(' · '))}</div>
  <div style="margin-top:10px">${miss.length?`<span class="pill r">You're missing ${esc(miss.map(c=>cert(c).name).join(', '))}</span>`:'<span class="pill g">You\u2019re ready for this job</span>'}</div>
  ${j.required.length?`<div class="note"><b>Required:</b> ${j.required.filter(cert).map(c=>esc(cert(c).name)+(isOne(j,c)?' (1+)':'')).join(', ')}</div>`:''}</div>
- ${foremanCard(crew.filter(c=>c.position==='Foreman'),f=>f.phone)}${locCard(j,false,true)}${V.sheet==='go'?goSheet(j):''}<div class="card"><h2>My crew (${crew.length})</h2>${crew.map(c=>`<div class="item" style="cursor:default"><div class="grow"><div class="t">${esc(c.name)}${c.person_id===pid?' (you)':''} ${posChip(c.position)}</div></div>${c.ready?'<span class="pill g">Ready</span>':'<span class="pill r">Missing cert</span>'}</div>`).join('')}</div>`:'<div class="card"><h2>My job</h2><p class="sub">You\u2019re not assigned to a job right now.</p></div>'}
+ ${foremanCard(crew.some(c=>'is_foreman' in c)?crew.filter(c=>c.is_foreman):(()=>{const f=j.foreman&&crew.find(c=>c.person_id===j.foreman);return f?[f]:crew.filter(c=>c.position==='Foreman')})(),f=>f.phone)}${locCard(j,false,true)}${V.sheet==='go'?goSheet(j):''}<div class="card"><h2>My crew (${crew.length})</h2>${crew.map(c=>`<div class="item" style="cursor:default"><div class="grow"><div class="t">${esc(c.name)}${c.person_id===pid?' (you)':''} ${posChip(c.position)}</div></div>${c.ready?'<span class="pill g">Ready</span>':'<span class="pill r">Missing cert</span>'}</div>`).join('')}</div>`:'<div class="card"><h2>My job</h2><p class="sub">You\u2019re not assigned to a job right now.</p></div>'}
  <div class="card" onclick="go('mycerts')" style="cursor:pointer"><h2>My certs ›</h2><div class="sub">${my.length} on file${my.filter(x=>status(pid,x.cert_id)==='soon').length?' · some expiring soon':''}</div></div>`}
 function myCertsView(){const p=D.people[0];if(!p)return mineView();const my=D.certs.filter(c=>pc(p.id,c.id));
  return `<h1>My certs</h1><p class="sub">Dates are set by your Scheduler. You can add photos of each card.</p><div class="card">${my.map(c=>{const h=pc(p.id,c.id),s=status(p.id,c.id);return `<div class="cb"><div class="grow"><div class="t">${esc(c.name)} ${s==='expired'?'<span class="pill r">Expired</span>':s==='soon'?'<span class="pill a">Expires soon</span>':'<span class="pill g">Current</span>'}</div><div class="sub">${h.acquired?'Acquired '+fmt(h.acquired):''}${h.expires?' · Expires '+fmt(h.expires):' · No expiry'}</div>
