@@ -1,5 +1,5 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8"><meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"><meta http-equiv="Pragma" content="no-cache"><meta http-equiv="Expires" content="0"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Cert Compliance</title><link rel="preconnect" href="https://ajsxfuguasqppuupepib.supabase.co" crossorigin><link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin><meta name="apple-mobile-web-app-capable" content="yes"><meta name="theme-color" content="#1e293b"><meta name="apple-mobile-web-app-title" content="Cert Compliance"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><link rel="apple-touch-icon" href="icon-180.png"><link rel="icon" href="icon-192.png"><link rel="manifest" href="manifest.json">
+<title>Cert Compliance</title><link rel="preconnect" href="https://ajsxfuguasqppuupepib.supabase.co" crossorigin><link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin><meta name="apple-mobile-web-app-capable" content="yes"><meta name="theme-color" content="#1e293b"><meta name="apple-mobile-web-app-title" content="Cert Compliance"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><link rel="apple-touch-icon" href="icon-180.png"><link rel="icon" href="icon-192.png"><link rel="manifest" href="manifest.json"><script>(function(){try{var p=localStorage.getItem('cc.theme')||'light',d=p==='dark'||(p==='system'&&matchMedia('(prefers-color-scheme: dark)').matches);if(d)document.documentElement.classList.add('dark');document.querySelector('meta[name=theme-color]').content=d?'#0b0f14':'#1e293b'}catch(e){}})()</script>
 <style>
 :root{--bg:#f3f5f9;--ink:#0f172a;--ink2:#475569;--mute:#64748b;--line:#e5e9f0;--pri:#2563eb;--dark:#1e293b;--gbg:#dcfce7;--rbg:#fee2e2;--abg:#fef3c7}
 *{box-sizing:border-box}body{margin:0;font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--ink);padding-bottom:90px}
@@ -70,10 +70,37 @@ body.hasdock{padding-bottom:calc(var(--navh,0px) + 90px)}body.sheetopen{overflow
 .sheet .list{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding-bottom:max(20px,env(safe-area-inset-bottom))}.sheet .item{padding:10px 16px;cursor:default}
 .grp{font-size:12px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;padding:12px 16px 4px;display:flex;gap:6px;align-items:center;background:#fff}
 .search{width:100%;padding:11px 12px 11px 38px;border:1px solid #cbd5e1;border-radius:12px;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%2364748b' stroke-width='2'%3E%3Ccircle cx='7' cy='7' r='5'/%3E%3Cpath d='M11 11l4 4'/%3E%3C/svg%3E") no-repeat 12px center;font-size:16px;margin:0}.search.hl{border-color:#2563eb;box-shadow:0 0 0 3px #bfdbfe}
-.pill.y{background:#fef3c7;color:#92400e}.item.bk .add{margin-left:6px}</style></head><body><div id="app"><main class="center"><div class="card">Loading…</div></main></div>
+.pill.y{background:#fef3c7;color:#92400e}.item.bk .add{margin-left:6px}
+/* ---------- dark theme (html.dark) ---------- */
+html.dark{color-scheme:dark;--bg:#0b0f14;--ink:#f1f5f9;--ink2:#cbd5e1;--mute:#9fb0c3;--line:#243041;--pri:#7cb0ff;--dark:#0b0f14;--gbg:#14532d;--rbg:#7f1d1d;--abg:#713f12;--card:#121821;--card2:#0f151d;--chip:#1c2532}
+html.dark body{background:var(--bg)}html.dark header{border-bottom:1px solid var(--line)}
+html.dark .card,html.dark .jc,html.dark .fmc,html.dark .as .grpb,html.dark .as .o,html.dark .sheet,html.dark .grp,html.dark .bt,html.dark .ptr{background:var(--card);box-shadow:none}
+html.dark .card,html.dark .jc,html.dark .fmc{border:1px solid var(--line)}html.dark .jc{border-left:5px solid #ef4444}html.dark .fmc{border-left:5px solid #64748b}
+html.dark .g,html.dark .status.g{background:#14532d;color:#bbf7d0}html.dark .r,html.dark .status.r,html.dark .btn.red{background:#7f1d1d;color:#fecaca}html.dark .a,html.dark .pill.y{background:#713f12;color:#fde68a}
+html.dark .n,html.dark .status.n,html.dark .chip,html.dark .note{background:var(--chip);color:var(--ink2)}html.dark .b{background:#1e3a8a;color:#dbeafe}html.dark .chip.fm{background:#e2e8f0;color:#0b0f14}
+html.dark .btn{background:#f1f5f9;color:#0b0f14}html.dark .btn.sec,html.dark .add.sec{background:var(--chip);color:var(--ink)}html.dark .add{background:#f1f5f9;color:#0b0f14}
+html.dark input,html.dark select,html.dark textarea{background:var(--card2);border-color:#334155;color:var(--ink)}html.dark input::placeholder,html.dark textarea::placeholder{color:#64748b}
+html.dark .search{background-color:var(--card2);border-color:#334155}html.dark .search.hl{border-color:var(--pri);box-shadow:0 0 0 3px #1e3a8a}html.dark .ssearch{background:var(--chip);color:var(--ink)}
+html.dark h2,html.dark .sh h2,html.dark .fml,html.dark .status.n{color:#cbd5e1}html.dark .sub,html.dark .empty,html.dark .menu-btn,html.dark .as .tt{color:var(--mute)}html.dark .sec2{color:var(--ink)}html.dark .ngh{color:var(--ink)}
+html.dark .gap,html.dark .prob,html.dark .err,html.dark .x{color:#fca5a5}html.dark .ok,html.dark .saved{color:#86efac}html.dark .saved.busy{color:var(--mute)}
+html.dark .sug .h,html.dark .exp,html.dark .acc{background:var(--card2);border-color:var(--line);color:var(--ink2)}
+html.dark .tog button,html.dark .big3 button{background:var(--card2);border-color:#334155;color:var(--ink2)}html.dark .tog button.on{background:#2563eb;border-color:#2563eb;color:#fff}html.dark .big3 button.on{background:#f1f5f9;border-color:#f1f5f9;color:#0b0f14}
+html.dark .sheet .hd{background:#13213a;border-color:#1e3a8a}html.dark .as .o{color:var(--pri);border-color:var(--line)}html.dark .as .tt{border-color:var(--line)}
+html.dark .dock{background:linear-gradient(#0b0f1400,#0b0f14 30%)}html.dark .dock .btn{box-shadow:none}html.dark .dim{background:#000000b3}
+html.dark .toast{background:#e2e8f0;color:#0b0f14}html.dark .sw{background:#334155}html.dark .pin,html.dark .dic{stroke:#cbd5e1}html.dark .pinl .pin{stroke:#9fb0c3}html.dark .tr{border-color:var(--line)}
+html.dark .fmc.none{background:#3a2a0a;border-left-color:#f59e0b;color:#fde68a}html.dark .fmc.none .fml{color:#fde68a}html.dark .pht{background:var(--chip)}html.dark .spin{border-color:#1e3a8a;border-top-color:#7cb0ff}
+html.dark a{color:var(--pri)}html.dark input[type=date]::-webkit-calendar-picker-indicator{filter:invert(.85)}
+html.dark [style*="color:#991b1b"]{color:#fca5a5!important}html.dark [style*="color:#166534"],html.dark [style*="color:#16a34a"]{color:#86efac!important}html.dark [style*="color:#92400e"]{color:#fde68a!important}
+html.dark [style*="background:#fee2e2"],html.dark [style*="background:#fef2f2"]{background:#7f1d1d!important;color:#fecaca!important}html.dark [style*="background:#dbeafe"]{background:#1e3a8a!important;color:#dbeafe!important}
+html.dark [style*="color:#0f172a"],html.dark [style*="color:#1e293b"],html.dark [style*="color:#334155"]{color:var(--ink)!important}html.dark [style*="color:#475569"],html.dark [style*="color:#64748b"]{color:var(--mute)!important}
+html.dark [style*="color:#7c3aed"]{color:#c4b5fd!important}html.dark [style*="color:#1d4ed8"]{color:var(--pri)!important}html.dark [style*="background:#fff"],html.dark [style*="background:#f8fafc"]{background:var(--card2)!important;color:var(--ink)!important}
+html.dark [style*="border:1px solid #cbd5e1"]{border-color:#334155!important}html.dark [style*="border-top:8px solid #f3f5f9"]{border-top-color:var(--bg)!important}html.dark [style*="background:#e7e9ee"]{background:var(--chip)!important}html.dark [style*="background:#5b6b86"]{background:#9fb0c3!important}
+.seg{display:flex;background:#eef2f7;border:1px solid var(--line);border-radius:10px;padding:3px;margin:10px 0 6px}.seg button{flex:1;font:inherit;font-size:14px;font-weight:600;padding:9px 0;border:0;border-radius:8px;background:none;color:var(--mute);cursor:pointer;min-height:40px}.seg button.on{background:#fff;color:#0f172a;box-shadow:0 1px 3px #0002}
+html.dark .seg{background:var(--bg)}html.dark .seg button.on{background:#f1f5f9;color:#0b0f14}
+</style></head><body><div id="app"><main class="center"><div class="card">Loading…</div></main></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.min.js"></script>
 <script>
-const BUILD='20261015010000';
+const BUILD='20261015020000';
 async function checkVer(){try{const r=await fetch('version.txt?'+Date.now(),{cache:'no-store'});if(!r.ok)return;const v=(await r.text()).trim();
  if(v&&v!==BUILD&&typeof TYPING==='function'&&TYPING()){document.addEventListener('focusout',()=>setTimeout(checkVer,300),{once:true});return}
  if(v&&v!==BUILD&&sessionStorage.getItem('cc.app.reloaded')!==v){sessionStorage.setItem('cc.app.reloaded',v);const u=new URLSearchParams(location.search);u.set('v',v);location.replace(location.pathname+'?'+u.toString()+location.hash)}}catch(e){}}
@@ -99,8 +126,8 @@ async function q(p,msg){const {data,error}=await p;if(error){toast(error.message
 const params=new URLSearchParams(location.search);
 
 /* ---------- auth ---------- */
-async function boot(){const {data}=await sb.auth.getSession();sess=data.session;
- sb.auth.onAuthStateChange((ev,s)=>{if(ev==='PASSWORD_RECOVERY'){V={tab:'reset'};sess=s;return render()}if(ev==='SIGNED_OUT'){clearCache();sess=null;me=null;D=null;render()}});
+async function boot(){const {data}=await sb.auth.getSession();sess=data.session;if(sess)applyTheme(themePref());
+ sb.auth.onAuthStateChange((ev,s)=>{if(ev==='PASSWORD_RECOVERY'){V={tab:'reset'};sess=s;return render()}if(ev==='SIGNED_IN'&&s&&s.user.user_metadata&&s.user.user_metadata.appearance)applyTheme(s.user.user_metadata.appearance);if(ev==='SIGNED_OUT'){clearCache();sess=null;me=null;D=null;render()}});
  if(location.hash.includes('type=recovery')){V={tab:'reset'};return render()}
  if(params.get('invite')&&!sess)authMode=params.get('existing')?'in':'up';
  if(sess&&fromCache())render(),start(true);else sess?await start():render()}
@@ -109,7 +136,7 @@ function saveCache(){try{if(!sess||!cid||!D)return;localStorage.setItem(CK(),JSO
 function fromCache(){try{const c=JSON.parse(localStorage.getItem(CK())||'null');if(!c||c.v!==1||!c.D||!c.cid)return false;if(c.owner&&localStorage.getItem('cc.app.ownerCid')!==c.cid)return false;
  ({me,owner,companies,cid,D}=c);crew=c.crew||[];blocked=false;noco=false;V={tab:owner?'jobs':me&&me.role==='tech'?'mine':'jobs'};history.replaceState({V,cid},'');depth=0;return true}catch(x){return false}}
 function clearCache(){try{Object.keys(localStorage).filter(k=>k.startsWith('cc.cache.')).forEach(k=>localStorage.removeItem(k))}catch(x){}}
-async function start(bg){const pv={cid,role:me&&me.role,owner};
+async function start(bg){if(sess){applyTheme(themePref());sb.auth.getUser().then(({data})=>{if(data&&data.user&&sess){const was=themePref();sess.user=data.user;if(themePref()!==was){applyTheme(themePref());render()}}}).catch(()=>{})}const pv={cid,role:me&&me.role,owner};
  let [cl,pr,ow,cos]=await Promise.all([sb.rpc('claim_invite').then(r=>r.data,()=>null),q(sb.from('profiles').select('*').eq('id',sess.user.id)),q(sb.from('owners').select('user_id')),q(sb.from('companies').select('*').order('name'))]);
  if(cl&&cl.claimed){setTimeout(()=>toast('You joined '+cl.company),300);[pr,cos]=await Promise.all([q(sb.from('profiles').select('*').eq('id',sess.user.id)),q(sb.from('companies').select('*').order('name'))])}
  me=pr[0];noco=false;owner=ow.length>0;blocked=false;
@@ -210,9 +237,18 @@ function postRender(){fillThumbs().catch(()=>{});const nav=$('nav.bt'),d=$('.doc
 function fitSheet(){const sh=$('#sheet'),vv=window.visualViewport;if(!sh||!vv||!sh.classList.contains('sheet'))return;const kb=Math.max(0,innerHeight-vv.height-vv.offsetTop);sh.style.bottom=kb+'px'}
 if(window.visualViewport){visualViewport.addEventListener('resize',fitSheet);visualViewport.addEventListener('scroll',fitSheet)}
 const cap=s=>s?s[0].toUpperCase()+s.slice(1):'';const ini=s=>String(s).split(/[\s@.]+/).filter(Boolean).slice(0,2).map(x=>x[0].toUpperCase()).join('');
+
+/* ---------- appearance (per person: auth user_metadata, cached locally, applied pre-paint) ---------- */
+const THEMES=[['light','Light'],['dark','Dark'],['system','Match phone']];const mqDark=matchMedia('(prefers-color-scheme: dark)');
+function themePref(){return (sess&&sess.user.user_metadata&&sess.user.user_metadata.appearance)||localStorage.getItem('cc.theme')||'light'}
+function applyTheme(p){p=p||'light';try{localStorage.setItem('cc.theme',p)}catch(x){}const d=p==='dark'||(p==='system'&&mqDark.matches);document.documentElement.classList.toggle('dark',d);const m=document.querySelector('meta[name=theme-color]');if(m)m.content=d?'#0b0f14':'#1e293b'}
+mqDark.addEventListener&&mqDark.addEventListener('change',()=>applyTheme(localStorage.getItem('cc.theme')));
+async function setTheme(p){applyTheme(p);render();const {data,error}=await sb.auth.updateUser({data:{appearance:p}});if(error)return toast('Couldn\u2019t save: '+error.message);if(data&&data.user)sess.user=data.user;toast('Appearance saved')}
+const themeName=()=>(THEMES.find(t=>t[0]===themePref())||THEMES[0])[1];
+function appearanceCard(){const p=themePref();return `<div class="card" id="appearance"><h2>Appearance</h2><div class="seg" role="radiogroup" aria-label="Appearance">${THEMES.map(([k,l])=>`<button role="radio" aria-checked="${k===p}" class="${k===p?'on':''}" onclick="setTheme('${k}')">${l}</button>`).join('')}</div><div class="sub">Dark is easier on the eyes at night and in bright sun. This is just for you and follows you to every device you sign in on. Your team keeps their own setting.</div></div>`}
 function accountView(){return `<button class="back" onclick="goBack()">← Back</button><div class="card"><h2>Account</h2><div class="t">${esc(me&&me.name||'')}</div><div class="sub">${esc(sess.user.email)}</div><div class="sub">${owner?'Platform owner':esc(cap(me.role))}${me&&me.position?' · '+esc(me.position):''}</div>
  <label style="margin-top:12px">Your name<input id="myname" value="${esc(me&&me.name||'')}"></label>${owner||isAdmin()?'<button class="btn sec" onclick="busy(this,saveMyName)">Save name</button>':''}
- <button class="btn sec" onclick="sb.auth.resetPasswordForEmail(sess.user.email,{redirectTo:location.origin+location.pathname}).then(()=>toast('Reset link emailed'))">Email me a password reset link</button><button class="btn red" style="margin-top:10px" onclick="signOut()">Sign out</button></div><div class="sub" style="text-align:center;margin-top:14px"><a href="/privacy/" style="color:inherit">Privacy</a> · <a href="/terms/" style="color:inherit">Terms</a></div>`}
+ <button class="btn sec" onclick="sb.auth.resetPasswordForEmail(sess.user.email,{redirectTo:location.origin+location.pathname}).then(()=>toast('Reset link emailed'))">Email me a password reset link</button><button class="btn red" style="margin-top:10px" onclick="signOut()">Sign out</button></div>${appearanceCard()}<div class="sub" style="text-align:center;margin-top:14px"><a href="/privacy/" style="color:inherit">Privacy</a> · <a href="/terms/" style="color:inherit">Terms</a></div>`}
 async function remSet(v){await q(sb.rpc('set_reminders',{cid,val:v}),v?'Reminders on':'Reminders off');const c=companies.find(x=>x.id===cid);if(c)c.reminders_on=v}
 async function saveMyName(){await q(sb.from('profiles').update({name:$('#myname').value.trim()}).eq('id',sess.user.id),'Saved');me.name=$('#myname').value.trim();render()}
 
@@ -432,6 +468,7 @@ async function phDel(id){const x=(D.photos||[]).find(p=>p.id===id);if(!x||!confi
 function setupView(){const n=(a,s,p)=>`${a.length} ${a.length==1?s:p}`;return `<h1>Setup</h1><div class="sub" style="margin:-6px 0 12px">What each job needs. Tap a row to edit.</div>
  <div class="card" style="padding:4px 16px">${nrow("go('certs')",'📜 Certs',n(D.certs,'cert','certs')+' · validity periods')}${nrow("go('lists',{k:'types'})",'🛠 Job types',n(D.types,'type','types')+' · certs each one needs')}${nrow("go('lists',{k:'custs'})",'🏢 Customers',n(D.custs,'customer','customers')+' · extra certs they require')}</div>
  ${isAdmin()?`<div class="card" style="padding:4px 16px">${nrow(`openBk('${cid}')`,'🛟 Backup &amp; restore','Download, saved backups, restore')}${owner?nrow("go('import')",'📥 Import','From old app on this phone · app owner only'):''}</div>`:''}
+ ${isAdmin()?`<div class="sh" style="margin-top:4px"><h2>You</h2></div><div class="card" style="padding:4px 16px">${nrow("go('account')",'🌓 Appearance',themeName()+' · just for you')}</div>`:''}
  <div class="note">Required certs for a new job = job type's certs + customer's certs.</div>`}
 function certsView(){return `<button class="back" onclick="goBack('setup')">← Setup</button><h1>Certs</h1><div class="card"><div class="sh"><h2>Certs · ${D.certs.length}</h2></div>${D.certs.map(c=>`<div class="crow" role="button" style="cursor:pointer" onclick="go('cert',{id:'${c.id}'})"><div class="grow"><div class="t">${esc(c.name)}</div><div class="sub">${c.valid_n?`Valid for ${c.valid_n} ${c.valid_u}`:'No set validity'}${(c.covers||[]).filter(cert).length?' · also counts as '+(c.covers||[]).filter(cert).map(i=>esc(cert(i).name)).join(', '):''}</div></div><span class="chev">›</span></div>`).join('')||'<div class="empty">No certs yet.</div>'}</div>
  <div class="card"><div class="sh"><h2>Add a cert</h2></div><label>Name<input id="nc" placeholder="e.g. Climber / Rescue"></label><div class="row"><label>Valid for<input id="ncN" type="number" min="0" placeholder="—"></label><label>&nbsp;<select id="ncU"><option>years</option><option>months</option><option>days</option></select></label></div><button class="btn" onclick="busy(this,certAdd)">Add cert</button></div>`}
