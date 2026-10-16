@@ -100,7 +100,7 @@ html.dark .seg{background:var(--bg)}html.dark .seg button.on{background:#f1f5f9;
 </style></head><body><div id="app"><main class="center"><div class="card">Loading…</div></main></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.min.js"></script>
 <script>
-const BUILD='20261016190000';
+const BUILD='20261016191000';
 async function checkVer(){try{const r=await fetch('version.txt?'+Date.now(),{cache:'no-store'});if(!r.ok)return;const v=(await r.text()).trim();
  if(v&&v!==BUILD&&typeof TYPING==='function'&&TYPING()){document.addEventListener('focusout',()=>setTimeout(checkVer,300),{once:true});return}
  if(v&&v!==BUILD&&sessionStorage.getItem('cc.app.reloaded')!==v){sessionStorage.setItem('cc.app.reloaded',v);const u=new URLSearchParams(location.search);u.set('v',v);location.replace(location.pathname+'?'+u.toString()+location.hash)}}catch(e){}}
@@ -263,7 +263,7 @@ async function pushOn(){if(!pushOK())return toast(isIOS()&&!installed()?'Add to 
  let sub=await r.pushManager.getSubscription();if(!sub)sub=await r.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:b64u(PUSH_KEY)});
  await saveSub(sub);PUSH.on=true;render();const {data}=await sb.functions.invoke('send-push',{body:{cid,test:true}});toast(data&&data.sent?'Phone notifications on \u2014 test sent':'Phone notifications on')}
 async function pushOff(){const r=await swReg();const sub=r&&await r.pushManager.getSubscription();if(sub){await q(sb.from('push_subscriptions').delete().eq('endpoint',sub.endpoint));await sub.unsubscribe().catch(()=>{})}PUSH.on=false;render();toast('Phone notifications off')}
-function dispatchCard(){if(!PUSH.checked)pushCheck().then(()=>V.tab==='account'&&render());const need=isIOS()&&!installed(),blocked=pushOK()&&Notification.permission==='denied';
+function dispatchCard(){if(!PUSH.checked)pushCheck().then(()=>V.tab==='account'&&render());const need=isIOS()&&!installed(),blocked=!need&&pushOK()&&Notification.permission==='denied';
  return `<div class="card" id="dispatch"><h2>Dispatch alerts</h2><div class="sub" style="margin-bottom:4px">A notification when you\u2019re put on a job or your crew changes.</div>
  <div class="item" style="cursor:default"><div class="grow"><div class="t">📱 Phone notifications</div><div class="sub">${PUSH.on?'On for this device':need?'Not set up on this phone yet':blocked?'Blocked in your phone\u2019s settings':pushOK()?'Off on this device':'Not supported in this browser'}</div></div><input type="checkbox" class="sw" ${PUSH.on?'checked':''} ${need||(!pushOK()&&!PUSH.on)?'disabled':''} onchange="this.checked?pushOn():pushOff()" aria-label="Phone notifications"></div>
  ${need?`<div class="note" style="margin-top:0">On iPhone, first tap Share <b>⎋</b> → <b>Add to Home Screen</b>, open Cert Compliance from your home screen, then turn this on.</div>`:''}${blocked?`<div class="note" style="margin-top:0">Turn on notifications for Cert Compliance in your phone\u2019s Settings, then come back.</div>`:''}
