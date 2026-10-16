@@ -100,7 +100,7 @@ html.dark .seg{background:var(--bg)}html.dark .seg button.on{background:#f1f5f9;
 </style></head><body><div id="app"><main class="center"><div class="card">Loading…</div></main></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.min.js"></script>
 <script>
-const BUILD='20261016230000';
+const BUILD='20261016233500';
 async function checkVer(){try{const r=await fetch('version.txt?'+Date.now(),{cache:'no-store'});if(!r.ok)return;const v=(await r.text()).trim();
  if(v&&v!==BUILD&&typeof TYPING==='function'&&TYPING()){document.addEventListener('focusout',()=>setTimeout(checkVer,300),{once:true});return}
  if(v&&v!==BUILD&&sessionStorage.getItem('cc.app.reloaded')!==v){sessionStorage.setItem('cc.app.reloaded',v);const u=new URLSearchParams(location.search);u.set('v',v);location.replace(location.pathname+'?'+u.toString()+location.hash)}}catch(e){}}
@@ -862,7 +862,8 @@ function scanTC(j){const ctext=[j.customer,j.site,j.description].filter(Boolean)
   if(!t){const d=scanDept(j.department);t=d&&d!=='tower'&&D.types.find(x=>nn(x.name)===d)}if(t)tst='check'}
  let cname=j.customer||'';const g=CUST_AL.find(g=>g.includes(nn(cname)));if(g&&g[0].length>3&&g[0]!==nn(cname))cname=g[0].replace(/\b\w/g,m=>m.toUpperCase()).replace('T Mobile','T-Mobile');
  const tt=n=>D.types.find(x=>nn(x.name)===n),d0=scanDept(j.department);
- if(/\brip\b/i.test([j.site,j.description,j.work_type].filter(Boolean).join(' '))&&tt('civil')){t=tt('civil');tst='ok';j.department='civil'}
+ if(/pano/i.test([j.site,j.description].filter(Boolean).join(' '))&&tt('electrical')){t=tt('electrical');tst='ok';j.department='electrical';j.equipment=(j.equipment||[]).filter(e=>!/gin/i.test(e))}
+ else if(/\brip\b/i.test([j.site,j.description,j.work_type].filter(Boolean).join(' '))&&tt('civil')){t=tt('civil');tst='ok';j.department='civil'}
  else if(/\brf\b/i.test([j.site,j.description].filter(Boolean).join(' '))&&tt('build')){t=tt('build');tst='ok';j.department='tower'}
  else if(t&&['civil','electrical'].includes(nn(t.name)))j.department=nn(t.name);
  else if(['civil','electrical'].includes(d0)&&tt(d0)&&tst!=='ok'){t=tt(d0);tst='check'}
