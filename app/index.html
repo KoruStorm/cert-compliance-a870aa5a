@@ -97,10 +97,26 @@ html.dark [style*="color:#7c3aed"]{color:#c4b5fd!important}html.dark [style*="co
 html.dark [style*="border:1px solid #cbd5e1"]{border-color:#334155!important}html.dark [style*="border-top:8px solid #f3f5f9"]{border-top-color:var(--bg)!important}html.dark [style*="background:#e7e9ee"]{background:var(--chip)!important}html.dark [style*="background:#5b6b86"]{background:#9fb0c3!important}
 .seg{display:flex;background:#eef2f7;border:1px solid var(--line);border-radius:10px;padding:3px;margin:10px 0 6px}.seg button{flex:1;font:inherit;font-size:14px;font-weight:600;padding:9px 0;border:0;border-radius:8px;background:none;color:var(--mute);cursor:pointer;min-height:40px}.seg button.on{background:#fff;color:#0f172a;box-shadow:0 1px 3px #0002}
 html.dark .seg{background:var(--bg)}html.dark .seg button.on{background:#f1f5f9;color:#0b0f14}
+.wxrow{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin:2px 0 8px}
+.wxrow h1{margin:0;min-width:0}.wxrow .sub{margin-top:1px}
+.wx{--wx:#e7edf4;flex:none;background:var(--wx);border-radius:20px;padding:7px 12px 6px;max-width:min(210px,56vw);text-align:center;color:var(--ink);line-height:1.15}
+.wx-top{font-size:11px;font-weight:600;color:#64748b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wx-mid{display:flex;align-items:center;justify-content:center;gap:7px;margin:3px 0 2px}
+.wx-temp{font-size:26px;font-weight:800;letter-spacing:-.03em;color:#0f172a;white-space:nowrap}
+.wx-rule{width:1px;height:28px;background:#c5d0dc;flex:none}
+.wx-wind{display:flex;align-items:center;gap:4px;font-size:13.5px;font-weight:600;color:#334155;white-space:nowrap}
+.wx-hint{font-size:10px;color:#94a3b8;font-weight:500}
+.wxi{width:22px;height:22px;stroke:#334155;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none;display:block}
+.wxi.sm{width:16px;height:16px;stroke-width:2}.wxi .cld{fill:var(--wx)}
+.wx.wait,.wx.off{display:inline-flex;align-items:center;gap:6px;padding:8px 12px;color:#64748b;font-size:12.5px;font-weight:600;border-radius:999px}
+.wx-hit{font:inherit;font-size:12.5px;font-weight:600;color:inherit;background:none;border:0;padding:8px 12px;display:flex;align-items:center;gap:6px;cursor:pointer;border-radius:999px}
+.wx.off{padding:0}
+html.dark .wx{--wx:var(--chip)}html.dark .wx-top,html.dark .wx-hint,html.dark .wx.wait,html.dark .wx.off{color:var(--mute)}
+html.dark .wx-temp{color:var(--ink)}html.dark .wx-wind{color:var(--ink2)}html.dark .wx-rule{background:#334155}html.dark .wxi{stroke:#cbd5e1}
 </style></head><body><div id="app"><main class="center"><div class="card">Loading…</div></main></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.min.js"></script>
 <script>
-const BUILD='20261016233500';
+const BUILD='20261105204748';
 async function checkVer(){try{const r=await fetch('version.txt?'+Date.now(),{cache:'no-store'});if(!r.ok)return;const v=(await r.text()).trim();
  if(v&&v!==BUILD&&typeof TYPING==='function'&&TYPING()){document.addEventListener('focusout',()=>setTimeout(checkVer,300),{once:true});return}
  if(v&&v!==BUILD&&sessionStorage.getItem('cc.app.reloaded')!==v){sessionStorage.setItem('cc.app.reloaded',v);const u=new URLSearchParams(location.search);u.set('v',v);location.replace(location.pathname+'?'+u.toString()+location.hash)}}catch(e){}}
@@ -178,7 +194,7 @@ async function load(){await drain();const f=t=>sb.from(t).select('*').eq('compan
 let lt=null;function live(){if(chan)sb.removeChannel(chan);chan=sb.channel('cc').on('postgres_changes',{event:'*',schema:'public'},()=>{clearTimeout(lt);lt=setTimeout(refresh,400)}).subscribe()}
 async function refresh(force){if(!sess)return;if(pendingN()||(!force&&Date.now()-lastTap<1500)){clearTimeout(lt);lt=setTimeout(refresh,1500);return}const busy=!force&&document.activeElement&&/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName);if(busy){clearTimeout(lt);lt=setTimeout(refresh,1500);return}
  if(owner)companies=await q(sb.from('companies').select('*').order('name'));else{const c=await q(sb.from('companies').select('*'));if(!c.length){blocked=true;return render()}}
- if(cid){await load();saveCache()}if(V.tab==='company')await loadCoInv(V.id);if(V.tab==='backup'){bkList=null;loadBk(V.id||cid).then(()=>render())}if(V.tab==='mine'||V.tab==='mycerts'){}render()}
+ if(cid){await load();saveCache()}if(V.tab==='company')await loadCoInv(V.id);if(V.tab==='backup'){bkList=null;loadBk(V.id||cid).then(()=>render())}if(force&&myRole()==='tech'&&V.tab==='mine')wxAsk(true);render()}
 const myRole=()=>owner?'admin':me&&me.role;const canEdit=()=>['admin','scheduler'].includes(myRole());const isAdmin=()=>myRole()==='admin';
 const cert=id=>D.certs.find(c=>c.id===id),person=id=>D.people.find(p=>p.id===id),job=id=>D.jobs.find(j=>j.id===id);
 const comp=()=>companies.find(c=>c.id===cid)||{};
@@ -233,7 +249,7 @@ function render0(){const a=$('#app');if(!sess)return a.innerHTML=authView();
  a.innerHTML=`<header><div class="logo">${owner&&!cid?'Owner dashboard':esc(c.name||'Cert Compliance')}<small>${owner?'Platform owner'+(cid?' · viewing as Admin':''):esc(cap(role))+(me&&me.position?' · '+esc(me.position):'')}</small></div><button class="av" onclick="go('account')" aria-label="Account">${esc(ini((me&&me.name)||sess.user.email))}</button></header>
  <main>${(views[V.tab]||jobsView)()}</main>${tabs.length>1?`<nav class="bt">${tabs.map(t=>`<button class="${top===t[0]?'on':''}" onclick="${t[0]==='owner'?'ownerHome()':`go('${t[0]}')`}"><i>${t[1]}</i>${t[2]}</button>`).join('')}</nav>`:''}${V.sheet==='photo'?photoViewer():''}`
  postRender()}
-function postRender(){fillThumbs().catch(()=>{});const nav=$('nav.bt'),d=$('.dock');document.documentElement.style.setProperty('--navh',(nav?nav.offsetHeight:0)+'px');document.body.classList.toggle('hasdock',!!d);document.body.classList.toggle('sheetopen',!!$('#sheet'));fitSheet();syncNote()}
+function postRender(){fillThumbs().catch(()=>{});const nav=$('nav.bt'),d=$('.dock');document.documentElement.style.setProperty('--navh',(nav?nav.offsetHeight:0)+'px');document.body.classList.toggle('hasdock',!!d);document.body.classList.toggle('sheetopen',!!$('#sheet'));fitSheet();syncNote();if($('#wx'))wxAsk(false)}
 function fitSheet(){const sh=$('#sheet'),vv=window.visualViewport;if(!sh||!vv||!sh.classList.contains('sheet'))return;const kb=Math.max(0,innerHeight-vv.height-vv.offsetTop);sh.style.bottom=kb+'px'}
 if(window.visualViewport){visualViewport.addEventListener('resize',fitSheet);visualViewport.addEventListener('scroll',fitSheet)}
 const cap=s=>s?s[0].toUpperCase()+s.slice(1):'';const ini=s=>String(s).split(/[\s@.]+/).filter(Boolean).slice(0,2).map(x=>x[0].toUpperCase()).join('');
@@ -599,11 +615,59 @@ async function openCompany(id){await loadCoInv(id);go('company',{id})}
 async function profSet(id,p){await q(sb.from('profiles').update(p).eq('id',id),'Saved');if(p.position!==undefined){const pe=D.people.find(x=>x.user_id===id);if(pe)await q(sb.from('people').update({position:p.position}).eq('id',pe.id))}await load();render()}
 async function profDel(id){if(!confirm('Remove this person\u2019s access? Their crew record stays, and you can give access back anytime.'))return;await q(sb.from('profiles').update({role:'none'}).eq('id',id),'Access removed');await load();render()}
 
+/* ---------- tech weather (Open-Meteo, no key; short session cache) ---------- */
+const WX_MS=15*60*1000,WX_KEY='cc.wx';
+let WX=null,wxBusy=false,wxGen=0;
+const WX_PATH={
+ sun:'<circle cx="12" cy="12" r="3.6"/><path d="M12 2.8v2M12 19.2v2M4.6 4.6l1.4 1.4M18 18l1.4 1.4M2.8 12h2M19.2 12h2M4.6 19.4l1.4-1.4M18 6l1.4-1.4"/>',
+ moon:'<path d="M16.5 13.2A6.2 6.2 0 0 1 10 5.2 6.4 6.4 0 1 0 16.5 13.2z"/>',
+ cloud:'<path class="cld" d="M7 17.2h9.4a3.5 3.5 0 0 0 .4-7 5 5 0 0 0-9.6-1.2A3.3 3.3 0 0 0 7 17.2z"/>',
+ partly:'<circle cx="8" cy="7.2" r="2.3"/><path d="M8 2.6v1.3M8 10.4v1.2M4.2 7.2h1.3M10.5 7.2h1.3M5.2 4.4l.9.9M10.8 4.4l-.9.9"/><path class="cld" d="M7.2 18h8.6a3.2 3.2 0 0 0 .3-6.4 4.5 4.5 0 0 0-8.6 1.2A3 3 0 0 0 7.2 18z"/>',
+ night:'<path d="M9.2 6.2A3.6 3.6 0 0 1 6.2 3.4 4 4 0 1 0 11 8.6 3.6 3.6 0 0 1 9.2 6.2z"/><path class="cld" d="M7.2 18h8.6a3.2 3.2 0 0 0 .3-6.4 4.5 4.5 0 0 0-8.6 1.2A3 3 0 0 0 7.2 18z"/>',
+ fog:'<path d="M5 9h14M4 13h16M6 17h10"/>',
+ drizzle:'<path class="cld" d="M6.5 14.2h10a3.4 3.4 0 0 0 .3-6.8 4.8 4.8 0 0 0-9.4-1A3.2 3.2 0 0 0 6.5 14.2z"/><path d="M8 17v1.6M12 17.6v1.6M16 17v1.6"/>',
+ rain:'<path class="cld" d="M6.5 13.6h10a3.4 3.4 0 0 0 .3-6.8 4.8 4.8 0 0 0-9.4-1A3.2 3.2 0 0 0 6.5 13.6z"/><path d="M8 16.2l-1 3.2M12 16.2l-1 3.2M16 16.2l-1 3.2"/>',
+ snow:'<path class="cld" d="M6.5 13.2h10a3.4 3.4 0 0 0 .3-6.8 4.8 4.8 0 0 0-9.4-1A3.2 3.2 0 0 0 6.5 13.2z"/><path d="M8 16v2.4M6.8 17.2h2.4M12 16.4v2.4M10.8 17.6h2.4M16 16v2.4M14.8 17.2h2.4"/>',
+ storm:'<path class="cld" d="M6.5 13.4h10a3.4 3.4 0 0 0 .3-6.8 4.8 4.8 0 0 0-9.4-1A3.2 3.2 0 0 0 6.5 13.4z"/><path d="M11.2 14.2 9 18h2.6l-1.6 3.2"/>',
+ wind:'<path d="M3 8h10.2a2.4 2.4 0 1 0-2.2-2.4M3 12h14.2a2.4 2.4 0 1 1-2.2 2.4M3 16h7"/>',
+ off:'<circle cx="12" cy="12" r="7"/><path d="M12 8v4.2M12 16h.01"/>'
+};
+const wxSvg=(d,sm)=>`<svg class="wxi${sm?' sm':''}" viewBox="0 0 24 24" aria-hidden="true">${d}</svg>`;
+function wxKind(code,day){const n=+code;if(n===0||n===1)return day===0?'moon':'sun';if(n===2)return day===0?'night':'partly';if(n===45||n===48)return'fog';if(n>=51&&n<=57)return'drizzle';if((n>=61&&n<=67)||(n>=80&&n<=82))return'rain';if((n>=71&&n<=77)||n===85||n===86)return'snow';if(n>=95)return'storm';return'cloud'}
+function wxRead(){try{const c=JSON.parse(sessionStorage.getItem(WX_KEY)||'null');if(c&&c.temp!=null&&Date.now()-c.at<WX_MS)return c}catch(e){}return null}
+function wxSave(c){try{sessionStorage.setItem(WX_KEY,JSON.stringify(c))}catch(e){}}
+function wxFresh(w){return !!(w&&w.temp!=null&&Date.now()-w.at<WX_MS)}
+function wxCur(){if(wxFresh(WX))return WX;const c=wxRead();if(c){WX=c;return c}if(WX&&(WX.temp!=null||WX.off||WX.err))return WX;return null}
+function wxView(){const w=wxCur();
+ if(w&&w.temp!=null){const place=w.place||'',label=`${place?place+', ':''}${w.temp} degrees Fahrenheit, wind ${w.wind} miles per hour`;
+  return {cls:'wx',label,html:`${place?`<div class="wx-top">${esc(place)}</div>`:''}<div class="wx-mid">${wxSvg(WX_PATH[wxKind(w.code,w.day)]||WX_PATH.cloud)}<div class="wx-temp">${w.temp}°F</div><div class="wx-rule" aria-hidden="true"></div><div class="wx-wind">${wxSvg(WX_PATH.wind,1)}<span>${w.wind} mph</span></div></div><div class="wx-hint">Using your location</div>`}}
+ if(w&&w.off)return {cls:'wx off',label:'Location off',html:`<button type="button" class="wx-hit" onclick="wxAsk(1)">${wxSvg(WX_PATH.off,1)}<span>Location off</span></button>`};
+ if(w&&w.err)return {cls:'wx off',label:'Weather unavailable',html:`<button type="button" class="wx-hit" onclick="wxAsk(1)"><span>Weather unavailable</span></button>`};
+ return {cls:'wx wait',label:'Loading weather',html:'<span class="spin"></span><span>Weather</span>'}}
+function wxHtml(){const s=wxView();return `<div id="wx" class="${s.cls}" role="status" aria-live="polite" aria-label="${esc(s.label)}">${s.html}</div>`}
+function wxPaint(){const el=$('#wx');if(!el)return;const s=wxView();el.className=s.cls;el.setAttribute('aria-label',s.label);el.innerHTML=s.html}
+async function wxFetch(lat,lon,gen){try{
+ const q=`latitude=${encodeURIComponent(lat)}&longitude=${encodeURIComponent(lon)}`;
+ const [met,g]=await Promise.all([
+  fetch(`https://api.open-meteo.com/v1/forecast?${q}&current=temperature_2m,weather_code,wind_speed_10m,is_day&temperature_unit=fahrenheit&wind_speed_unit=mph`).then(r=>{if(!r.ok)throw new Error('wx');return r.json()}),
+  fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?${q}&localityLanguage=en`).then(r=>r.ok?r.json():null).catch(()=>null)]);
+ if(gen!==wxGen)return;const c=met.current||{},temp=Math.round(c.temperature_2m),wind=Math.round(c.wind_speed_10m);
+ if(!isFinite(temp)||!isFinite(wind))throw new Error('wx');
+ const place=(g&&(g.city||g.locality||g.principalSubdivision))||'';
+ WX={at:Date.now(),temp,code:c.weather_code,wind,day:c.is_day,place};wxSave(WX);try{sessionStorage.removeItem(WX_KEY+'.off')}catch(e){}wxPaint()}
+ catch(e){if(gen!==wxGen)return;if(!(WX&&WX.temp!=null)){WX={err:1,at:Date.now()};wxPaint()}}
+ finally{if(gen===wxGen)wxBusy=false}}
+function wxAsk(force){if(wxBusy)return;if(!force&&wxFresh(WX))return;if(!force){const c=wxRead();if(c){WX=c;return}if(WX&&WX.off)return;try{if(sessionStorage.getItem(WX_KEY+'.off')){WX={off:1};return}}catch(e){}if(WX&&WX.err&&Date.now()-(WX.at||0)<60000)return}
+ if(!navigator.geolocation){try{sessionStorage.setItem(WX_KEY+'.off','1')}catch(e){}if(!(WX&&WX.temp!=null)){WX={off:1,at:Date.now()};wxPaint()}return}
+ wxBusy=true;const gen=++wxGen;
+ navigator.geolocation.getCurrentPosition(p=>{const lat=(+p.coords.latitude).toFixed(2),lon=(+p.coords.longitude).toFixed(2);wxFetch(lat,lon,gen)},
+  ()=>{if(gen!==wxGen)return;wxBusy=false;try{sessionStorage.setItem(WX_KEY+'.off','1')}catch(e){}if(!(WX&&WX.temp!=null)){WX={off:1,at:Date.now()};wxPaint()}},
+  {enableHighAccuracy:false,timeout:12000,maximumAge:WX_MS})}
 /* ---------- tech ---------- */
 function mineView(){const pid=D.people[0]&&D.people[0].id,j=D.jobs[0];
  if(!pid)return `<div class="card"><h2>Welcome</h2><p class="sub">Your account isn't linked to a crew member yet. Ask your Admin.</p></div>`;
  const my=D.pcs.filter(x=>x.person_id===pid),miss=j?j.required.filter(c=>!isOne(j,c)&&bad(status(pid,c))&&cert(c)):[];
- return `<h1>Hi ${esc(D.people[0].name.split(' ')[0])}</h1>${j?`<div class="card"><div class="sub">My job</div><div class="big">${esc(j.site||j.type)}</div><div class="sub" style="font-size:15px">${esc([j.site?j.type:'',j.customer].filter(Boolean).join(' · '))}</div>
+ return `<div class="wxrow"><div><h1>Hi ${esc(D.people[0].name.split(' ')[0])}</h1><div class="sub">My job</div></div>${wxHtml()}</div>${j?`<div class="card"><div class="sub">My job</div><div class="big">${esc(j.site||j.type)}</div><div class="sub" style="font-size:15px">${esc([j.site?j.type:'',j.customer].filter(Boolean).join(' · '))}</div>
  <div style="margin-top:10px">${miss.length?`<span class="pill r">You're missing ${esc(miss.map(c=>cert(c).name).join(', '))}</span>`:'<span class="pill g">You\u2019re ready for this job</span>'}</div>
  ${j.required.length?`<div class="note"><b>Required:</b> ${j.required.filter(cert).map(c=>esc(cert(c).name)+(isOne(j,c)?' (1+)':'')).join(', ')}</div>`:''}</div>
  ${foremanCard(crew.some(c=>'is_foreman' in c)?crew.filter(c=>c.is_foreman):(()=>{const f=j.foreman&&crew.find(c=>c.person_id===j.foreman);return f?[f]:crew.filter(c=>c.position==='Foreman')})(),f=>f.phone)}${locCard(j,false,true)}${V.sheet==='go'?goSheet(j):''}<div class="card"><h2>My crew (${crew.length})</h2>${crew.map(c=>`<div class="item" style="cursor:default"><div class="grow"><div class="t">${esc(c.name)}${c.person_id===pid?' (you)':''} ${posChip(c.position)}</div></div>${c.ready?'<span class="pill g">Ready</span>':'<span class="pill r">Missing cert</span>'}</div>`).join('')}</div>`:'<div class="card"><h2>My job</h2><p class="sub">You\u2019re not assigned to a job right now.</p></div>'}
