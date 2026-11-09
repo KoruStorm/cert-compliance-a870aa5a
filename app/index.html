@@ -116,7 +116,7 @@ html.dark .wx-temp{color:var(--ink)}html.dark .wx-wind{color:var(--ink2)}html.da
 </style></head><body><div id="app"><main class="center"><div class="card">Loading…</div></main></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.min.js"></script>
 <script>
-const BUILD='20261109201220';
+const BUILD='20261109205002';
 async function checkVer(){try{const r=await fetch('version.txt?'+Date.now(),{cache:'no-store'});if(!r.ok)return;const v=(await r.text()).trim();
  if(v&&v!==BUILD&&typeof TYPING==='function'&&TYPING()){document.addEventListener('focusout',()=>setTimeout(checkVer,300),{once:true});return}
  if(v&&v!==BUILD&&sessionStorage.getItem('cc.app.reloaded')!==v){sessionStorage.setItem('cc.app.reloaded',v);const u=new URLSearchParams(location.search);u.set('v',v);location.replace(location.pathname+'?'+u.toString()+location.hash)}}catch(e){}}
@@ -468,7 +468,7 @@ function peopleView(){const s=(V.q||'').toLowerCase(),dk=V.dept,inD=dk!==undefin
  if(s)return `<h1>People</h1>${addr}${srch}${l.length?`<div class="card" style="padding:0 14px">${l.map(row).join('')}</div>`:empty}`;
  const drow=(k,n)=>{const g=D.people.filter(p=>(p.department||null)===k),fm=g.filter(p=>p.position==='Foreman').length,
   e=g.filter(p=>D.pcs.some(x=>x.person_id===p.id&&own(p.id,x.cert_id)==='expired')).length,so=g.filter(p=>D.pcs.some(x=>x.person_id===p.id&&own(p.id,x.cert_id)==='soon')).length,nd=g.filter(p=>D.pcs.some(x=>x.person_id===p.id&&own(p.id,x.cert_id)==='needs')).length;
-  return `<div class="item" role="button" onclick="go('people',{dept:${k?`'${k}'`:'null'}})">${k?dIcon(k,22):''}<div class="grow" style="margin-left:${k?10:0}px"><div class="t">${n}</div><div class="sub">${g.length} ${g.length==1?'person':'people'}${fm?` · ${fm} foreman`:''}</div></div>${e?`<span class="pill r">${e} expired</span>`:so?`<span class="pill a">${so} expiring</span>`:nd?`<span class="pill a">${nd} needs date</span>`:''}<span class="chev">›</span></div>`};
+  return `<div class="item" role="button" onclick="go('people',{dept:${k?`'${k}'`:'null'}})">${k?dIcon(k,22):''}<div class="grow" style="margin-left:${k?10:0}px"><div class="t">${n}</div><div class="sub">${g.length} ${g.length==1?'person':'people'}${fm?` · ${fm} foreman`:''}</div></div>${[e?`<span class="pill r">${e} expired</span>`:'',so?`<span class="pill a">${so} expiring</span>`:'',nd?`<span class="pill a">${nd} needs date</span>`:''].filter(Boolean).join('')}<span class="chev">›</span></div>`};
  const none=D.people.some(p=>!p.department);
  return `<h1>People</h1>${addr}${srch}${D.people.length?`${certCard()}<div class="card" style="padding:0 16px">${DEPTS.map(([k,n])=>drow(k,n)).join('')}</div>${none?`<div class="card" style="padding:0 16px">${drow(null,'No department')}</div>`:''}<div class="sub" style="text-align:center">Tap a department to see its people</div>`:empty}${isAdmin()?`<button class="lnk" style="display:block;margin:10px auto 0" onclick="csOpen()">📄 Scan certs</button>${V.sheet==='certscan'?certScanSheet():''}`:''}`}
 const CPI='<svg class="dic" viewBox="0 0 24 24" style="width:22px;height:22px"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h5"/><circle cx="16" cy="16" r="3"/></svg>';
