@@ -116,7 +116,7 @@ html.dark .wx-temp{color:var(--ink)}html.dark .wx-wind{color:var(--ink2)}html.da
 </style></head><body><div id="app"><main class="center"><div class="card">Loading…</div></main></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.min.js"></script>
 <script>
-const BUILD='20261109210139';
+const BUILD='20261109210517';
 async function checkVer(){try{const r=await fetch('version.txt?'+Date.now(),{cache:'no-store'});if(!r.ok)return;const v=(await r.text()).trim();
  if(v&&v!==BUILD&&typeof TYPING==='function'&&TYPING()){document.addEventListener('focusout',()=>setTimeout(checkVer,300),{once:true});return}
  if(v&&v!==BUILD&&sessionStorage.getItem('cc.app.reloaded')!==v){sessionStorage.setItem('cc.app.reloaded',v);const u=new URLSearchParams(location.search);u.set('v',v);location.replace(location.pathname+'?'+u.toString()+location.hash)}}catch(e){}}
@@ -190,7 +190,7 @@ async function load(){await drain();const f=t=>sb.from(t).select('*').eq('compan
  D.photos=(await all(()=>sb.from('cert_photos').select('*').eq('company_id',cid)).catch(()=>[])).sort((a,b)=>a.created_at<b.created_at?-1:1);
  if(role==='admin'||role==='scheduler'){[D.profiles,D.audit]=await Promise.all([q(sb.from('profiles').select('*').eq('company_id',cid)),q(sb.from('audit_log').select('*').eq('company_id',cid).order('at',{ascending:false}).limit(200))])}
  if(role==='admin')D.invites=await q(sb.from('pending_invites').select('*').eq('company_id',cid));
- if(role==='tech'){crew=(await q(sb.rpc('my_crew')))||[]}}
+ if(role==='tech'){const {data:cr,error:ce}=await sb.rpc('my_crew');if(!ce&&Array.isArray(cr))crew=cr}}
 let lt=null;function live(){if(chan)sb.removeChannel(chan);chan=sb.channel('cc').on('postgres_changes',{event:'*',schema:'public'},()=>{clearTimeout(lt);lt=setTimeout(refresh,400)}).subscribe()}
 async function refresh(force){if(!sess)return;if(pendingN()||(!force&&Date.now()-lastTap<1500)){clearTimeout(lt);lt=setTimeout(refresh,1500);return}const busy=!force&&document.activeElement&&/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName);if(busy){clearTimeout(lt);lt=setTimeout(refresh,1500);return}
  if(owner)companies=await q(sb.from('companies').select('*').order('name'));else{const c=await q(sb.from('companies').select('*'));if(!c.length){blocked=true;return render()}}
